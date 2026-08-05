@@ -14,6 +14,12 @@ variable "dynamodb_table_arn" {
   default     = ""
 }
 
+variable "enable_dynamodb_access" {
+  description = "Whether to attach DynamoDB access permissions"
+  type        = bool
+  default     = true
+}
+
 variable "enable_ses_send" {
   description = "Whether to attach SES SendEmail permissions"
   type        = bool

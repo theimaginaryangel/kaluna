@@ -25,7 +25,7 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
 }
 
 data "aws_iam_policy_document" "dynamodb_access" {
-  count = var.dynamodb_table_arn != "" ? 1 : 0
+  count = var.enable_dynamodb_access ? 1 : 0
 
   statement {
     effect = "Allow"
@@ -45,7 +45,7 @@ data "aws_iam_policy_document" "dynamodb_access" {
 }
 
 resource "aws_iam_role_policy" "dynamodb_policy" {
-  count  = var.dynamodb_table_arn != "" ? 1 : 0
+  count  = var.enable_dynamodb_access ? 1 : 0
   name   = "${var.role_name}-dynamodb-policy"
   role   = aws_iam_role.lambda_role.id
   policy = data.aws_iam_policy_document.dynamodb_access[0].json
