@@ -34,6 +34,11 @@ def lambda_handler(event, context):
             log_event(request_id, "N/A", "list_events", start_time, "success")
             return response
             
+        elif path == '/analytics' and http_method == 'GET':
+            response = get_analytics()
+            log_event(request_id, "N/A", "get_analytics", start_time, "success")
+            return response
+            
         elif path == '/events' and http_method == 'POST':
             body = json.loads(event.get('body', '{}'))
             response, new_event_id = create_event(body)
@@ -55,6 +60,12 @@ def lambda_handler(event, context):
             elif http_method == 'DELETE':
                 response = delete_event(event_id)
                 log_event(request_id, event_id, "delete_event", start_time, "success")
+                return response
+                
+        elif path.startswith('/events/') and path.endswith('/registrations') and event_id:
+            if http_method == 'GET':
+                response = list_event_registrations(event_id)
+                log_event(request_id, event_id, "list_registrations", start_time, "success")
                 return response
                 
         # Route not found
@@ -257,4 +268,48 @@ def clean_item(item):
     cleaned = item.copy()
     cleaned.pop('PK', None)
     cleaned.pop('SK', None)
+    cleaned.pop('GSI1PK', None)
+    cleaned.pop('GSI1SK', None)
     return cleaned
+
+def list_event_registrations(event_id):
+    response = table.query(
+        KeyConditionExpression=Key('PK').eq(f"EVENT#{event_id}") & Key('SK').begins_with("REG#")
+    )
+    items = response.get('Items', [])
+    registrations = [clean_item(item) for item in items]
+    return build_response(200, registrations)
+
+def get_analytics():
+    # In a real heavy production app, we would maintain these counters transactionally or use a secondary index.
+    # For this scale, a single scan to aggregate data is acceptable.
+    response = table.scan()
+    items = response.get('Items', [])
+    
+    total_events = 0
+    upcoming_events = 0
+    total_registrations = 0
+    total_checked_in = 0
+    
+    for item in items:
+        sk = item.get('SK', '')
+        if sk == 'METADATA':
+            total_events += 1
+            if item.get('status') != 'sold_out':
+                upcoming_events += 1
+        elif sk.startswith('REG#'):
+            total_registrations += 1
+            if item.get('status') == 'checked_in':
+                total_checked_in += 1
+                
+    attendance_rate = 0
+    if total_registrations > 0:
+        attendance_rate = (total_checked_in / total_registrations) * 100
+        
+    stats = {
+        'totalEvents': total_events,
+        'upcomingEvents': upcoming_events,
+        'totalRegistrations': total_registrations,
+        'attendanceRate': round(attendance_rate, 2)
+    }
+    return build_response(200, stats)

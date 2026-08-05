@@ -20,6 +20,24 @@ module "ses" {
   environment  = local.environment
 }
 
+module "cognito" {
+  source         = "../../modules/cognito"
+  user_pool_name = "kaluna-${local.environment}-pool"
+  environment    = local.environment
+}
+
+resource "aws_apigatewayv2_authorizer" "jwt_auth" {
+  api_id           = module.api_gateway.api_id
+  authorizer_type  = "JWT"
+  identity_sources = ["$request.header.Authorization"]
+  name             = "cognito-authorizer"
+  
+  jwt_configuration {
+    audience = [module.cognito.user_pool_client_id]
+    issuer   = "https://${module.cognito.user_pool_endpoint}"
+  }
+}
+
 # --- Events Service ---
 
 module "events_iam" {
@@ -65,9 +83,11 @@ resource "aws_apigatewayv2_route" "events_get_all" {
 }
 
 resource "aws_apigatewayv2_route" "events_post" {
-  api_id    = module.api_gateway.api_id
-  route_key = "POST /events"
-  target    = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
+  api_id             = module.api_gateway.api_id
+  route_key          = "POST /events"
+  target             = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
 }
 
 resource "aws_apigatewayv2_route" "events_get_one" {
@@ -77,15 +97,35 @@ resource "aws_apigatewayv2_route" "events_get_one" {
 }
 
 resource "aws_apigatewayv2_route" "events_put" {
-  api_id    = module.api_gateway.api_id
-  route_key = "PUT /events/{eventId}"
-  target    = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
+  api_id             = module.api_gateway.api_id
+  route_key          = "PUT /events/{eventId}"
+  target             = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
 }
 
 resource "aws_apigatewayv2_route" "events_delete" {
-  api_id    = module.api_gateway.api_id
-  route_key = "DELETE /events/{eventId}"
-  target    = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
+  api_id             = module.api_gateway.api_id
+  route_key          = "DELETE /events/{eventId}"
+  target             = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
+}
+
+resource "aws_apigatewayv2_route" "events_registrations_get" {
+  api_id             = module.api_gateway.api_id
+  route_key          = "GET /events/{eventId}/registrations"
+  target             = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
+}
+
+resource "aws_apigatewayv2_route" "analytics_get" {
+  api_id             = module.api_gateway.api_id
+  route_key          = "GET /analytics"
+  target             = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
 }
 
 resource "aws_lambda_permission" "events_api_gw" {
@@ -221,9 +261,11 @@ resource "aws_apigatewayv2_route" "checkin_post" {
 }
 
 resource "aws_apigatewayv2_route" "checkins_get" {
-  api_id    = module.api_gateway.api_id
-  route_key = "GET /events/{eventId}/check-ins"
-  target    = "integrations/${aws_apigatewayv2_integration.checkin_integration.id}"
+  api_id             = module.api_gateway.api_id
+  route_key          = "GET /events/{eventId}/check-ins"
+  target             = "integrations/${aws_apigatewayv2_integration.checkin_integration.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
 }
 
 resource "aws_lambda_permission" "checkin_api_gw" {
