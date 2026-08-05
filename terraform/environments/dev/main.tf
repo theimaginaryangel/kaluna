@@ -14,6 +14,12 @@ module "api_gateway" {
   environment = local.environment
 }
 
+module "ses" {
+  source       = "../../modules/ses"
+  sender_email = "contact@bennyduah.com"
+  environment  = local.environment
+}
+
 # --- Events Service ---
 
 module "events_iam" {
@@ -98,6 +104,7 @@ module "registrations_iam" {
   role_name          = "eventflow-${local.environment}-registrations-role"
   environment        = local.environment
   dynamodb_table_arn = module.dynamodb.table_arn
+  enable_ses_send    = true
 }
 
 data "archive_file" "registrations_zip" {
@@ -116,7 +123,8 @@ resource "aws_lambda_function" "registrations" {
 
   environment {
     variables = {
-      TABLE_NAME = module.dynamodb.table_name
+      TABLE_NAME   = module.dynamodb.table_name
+      SENDER_EMAIL = module.ses.sender_email
     }
   }
 }
@@ -150,6 +158,78 @@ resource "aws_lambda_permission" "registrations_api_gw" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.registrations.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.execution_arn}/*/*"
+}
+
+
+# --- Check-in Service (Go) ---
+
+module "checkin_iam" {
+  source             = "../../modules/iam"
+  role_name          = "eventflow-${local.environment}-checkin-role"
+  environment        = local.environment
+  dynamodb_table_arn = module.dynamodb.table_arn
+}
+
+resource "null_resource" "build_checkin" {
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+  provisioner "local-exec" {
+    command = "cd ../../../services/checkin && go build -o bootstrap main.go"
+    environment = {
+      GOOS   = "linux"
+      GOARCH = "amd64"
+    }
+  }
+}
+
+data "archive_file" "checkin_zip" {
+  depends_on  = [null_resource.build_checkin]
+  type        = "zip"
+  source_file = "../../../services/checkin/bootstrap"
+  output_path = "${path.module}/checkin.zip"
+}
+
+resource "aws_lambda_function" "checkin" {
+  filename         = data.archive_file.checkin_zip.output_path
+  function_name    = "eventflow-${local.environment}-checkin"
+  role             = module.checkin_iam.role_arn
+  handler          = "bootstrap"
+  runtime          = "provided.al2023"
+  source_code_hash = data.archive_file.checkin_zip.output_base64sha256
+
+  environment {
+    variables = {
+      TABLE_NAME = module.dynamodb.table_name
+    }
+  }
+}
+
+resource "aws_apigatewayv2_integration" "checkin_integration" {
+  api_id             = module.api_gateway.api_id
+  integration_type   = "AWS_PROXY"
+  integration_method = "POST"
+  integration_uri    = aws_lambda_function.checkin.invoke_arn
+}
+
+resource "aws_apigatewayv2_route" "checkin_post" {
+  api_id    = module.api_gateway.api_id
+  route_key = "POST /check-in"
+  target    = "integrations/${aws_apigatewayv2_integration.checkin_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "checkins_get" {
+  api_id    = module.api_gateway.api_id
+  route_key = "GET /events/{eventId}/check-ins"
+  target    = "integrations/${aws_apigatewayv2_integration.checkin_integration.id}"
+}
+
+resource "aws_lambda_permission" "checkin_api_gw" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.checkin.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${module.api_gateway.execution_arn}/*/*"
 }

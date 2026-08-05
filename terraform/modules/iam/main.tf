@@ -50,3 +50,23 @@ resource "aws_iam_role_policy" "dynamodb_policy" {
   role   = aws_iam_role.lambda_role.id
   policy = data.aws_iam_policy_document.dynamodb_access[0].json
 }
+
+data "aws_iam_policy_document" "ses_access" {
+  count = var.enable_ses_send ? 1 : 0
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "ses:SendEmail",
+      "ses:SendRawEmail",
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "ses_policy" {
+  count  = var.enable_ses_send ? 1 : 0
+  name   = "${var.role_name}-ses-policy"
+  role   = aws_iam_role.lambda_role.id
+  policy = data.aws_iam_policy_document.ses_access[0].json
+}

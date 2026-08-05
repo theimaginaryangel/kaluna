@@ -13,3 +13,9 @@ variable "dynamodb_table_arn" {
   type        = string
   default     = ""
 }
+
+variable "enable_ses_send" {
+  description = "Whether to attach SES SendEmail permissions"
+  type        = bool
+  default     = false
+}

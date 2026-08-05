@@ -9,7 +9,9 @@ from botocore.exceptions import ClientError
 from utils import format_error, build_response, log_event
 
 dynamodb = boto3.resource('dynamodb')
+ses = boto3.client('ses', region_name=os.environ.get('AWS_DEFAULT_REGION', 'eu-west-1'))
 table_name = os.environ.get('TABLE_NAME', 'eventflow-dev-table')
+sender_email = os.environ.get('SENDER_EMAIL', 'contact@bennyduah.com')
 table = dynamodb.Table(table_name)
 
 def lambda_handler(event, context):
@@ -139,6 +141,33 @@ def register(event_id, body):
                 return build_response(409, format_error("Already registered", "DUPLICATE_REGISTRATION"))
                 
         return build_response(500, format_error(f"Transaction failed: {str(e)}", "INTERNAL_ERROR"))
+        
+    # Send SES Email asynchronously (best effort in this handler)
+    try:
+        qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={ticket_id}"
+        html_body = f\"\"\"
+        <html>
+        <body>
+            <h1>Registration Confirmed!</h1>
+            <p>Hi {name},</p>
+            <p>You have successfully registered for the event.</p>
+            <p>Your Ticket ID is: <strong>{ticket_id}</strong></p>
+            <p>Please present the QR code below at check-in:</p>
+            <img src="{qr_url}" alt="Ticket QR Code" />
+        </body>
+        </html>
+        \"\"\"
+        
+        ses.send_email(
+            Source=sender_email,
+            Destination={'ToAddresses': [email]},
+            Message={
+                'Subject': {'Data': 'Your Event Registration Ticket'},
+                'Body': {'Html': {'Data': html_body}}
+            }
+        )
+    except Exception as e:
+        print(f"Failed to send email: {e}") # Log it, but don't fail the registration
         
     return build_response(201, clean_item(reg_item))
 
