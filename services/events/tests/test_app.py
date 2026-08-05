@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import pytest
 import boto3
@@ -11,6 +12,15 @@ def aws_credentials():
     os.environ['AWS_SECURITY_TOKEN'] = 'testing'
     os.environ['AWS_SESSION_TOKEN'] = 'testing'
     os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
+
+@pytest.fixture(autouse=True)
+def prepare_environment(aws_credentials):
+    service_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    if service_dir in sys.path:
+        sys.path.remove(service_dir)
+    sys.path.insert(0, service_dir)
+    sys.modules.pop('app', None)
+    sys.modules.pop('utils', None)
 
 @pytest.fixture
 def dynamodb_client(aws_credentials):
@@ -129,10 +139,63 @@ def test_get_event_not_found(setup_table):
     assert body['errorCode'] == 'NOT_FOUND'
 
 
+def test_update_event_success(setup_table):
+    from app import lambda_handler
+    
+    create = {
+        'requestContext': {'http': {'method': 'POST', 'path': '/api/v1/events'}},
+        'body': json.dumps({'name': 'Original Name', 'date': '2024-01-01', 'venue': 'V1', 'capacity': 50})
+    }
+    resp = lambda_handler(create, None)
+    event_id = json.loads(resp['body'])['eventId']
+    
+    update = {
+        'requestContext': {'http': {'method': 'PUT', 'path': f'/api/v1/events/{event_id}'}},
+        'pathParameters': {'eventId': event_id},
+        'body': json.dumps({'name': 'Updated Name', 'capacity': 100, 'waitlistEnabled': True})
+    }
+    resp2 = lambda_handler(update, None)
+    assert resp2['statusCode'] == 200
+    body2 = json.loads(resp2['body'])
+    assert body2['name'] == 'Updated Name'
+    assert body2['capacity'] == 100
+    assert body2['waitlistEnabled'] == True
+
+
+def test_update_event_not_found(setup_table):
+    from app import lambda_handler
+    update = {
+        'requestContext': {'http': {'method': 'PUT', 'path': '/api/v1/events/nonexistent'}},
+        'pathParameters': {'eventId': 'nonexistent'},
+        'body': json.dumps({'name': 'New Name'})
+    }
+    resp = lambda_handler(update, None)
+    assert resp['statusCode'] == 404
+    body = json.loads(resp['body'])
+    assert body['errorCode'] == 'NOT_FOUND'
+
+
+def test_update_event_invalid_input(setup_table):
+    from app import lambda_handler
+    create = {
+        'requestContext': {'http': {'method': 'POST', 'path': '/api/v1/events'}},
+        'body': json.dumps({'name': 'Event', 'date': '2024-01-01', 'venue': 'V', 'capacity': 10})
+    }
+    resp = lambda_handler(create, None)
+    event_id = json.loads(resp['body'])['eventId']
+
+    update = {
+        'requestContext': {'http': {'method': 'PUT', 'path': f'/api/v1/events/{event_id}'}},
+        'pathParameters': {'eventId': event_id},
+        'body': json.dumps({'capacity': 'not-a-number'})
+    }
+    resp2 = lambda_handler(update, None)
+    assert resp2['statusCode'] == 400
+
+
 def test_delete_event(setup_table):
     from app import lambda_handler
     
-    # Create first
     create = {
         'requestContext': {'http': {'method': 'POST', 'path': '/api/v1/events'}},
         'body': json.dumps({'name': 'To Delete', 'date': '2024-01-01', 'venue': 'V', 'capacity': 10})
@@ -140,7 +203,6 @@ def test_delete_event(setup_table):
     resp = lambda_handler(create, None)
     event_id = json.loads(resp['body'])['eventId']
     
-    # Delete
     delete = {
         'requestContext': {'http': {'method': 'DELETE', 'path': f'/api/v1/events/{event_id}'}},
         'pathParameters': {'eventId': event_id}
@@ -148,7 +210,6 @@ def test_delete_event(setup_table):
     resp2 = lambda_handler(delete, None)
     assert resp2['statusCode'] == 204
     
-    # Verify gone
     get = {
         'requestContext': {'http': {'method': 'GET', 'path': f'/api/v1/events/{event_id}'}},
         'pathParameters': {'eventId': event_id}
@@ -160,7 +221,6 @@ def test_delete_event(setup_table):
 def test_list_events(setup_table):
     from app import lambda_handler
     
-    # Create two events
     for i in range(2):
         create = {
             'requestContext': {'http': {'method': 'POST', 'path': '/api/v1/events'}},
@@ -168,7 +228,6 @@ def test_list_events(setup_table):
         }
         lambda_handler(create, None)
     
-    # List
     list_event = {
         'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/events'}}
     }
@@ -178,6 +237,91 @@ def test_list_events(setup_table):
     assert len(body['events']) == 2
 
 
+def test_list_events_pagination(setup_table, dynamodb_client, table_name):
+    from app import lambda_handler
+    
+    for i in range(5):
+        dynamodb_client.put_item(
+            TableName=table_name,
+            Item={
+                'PK': {'S': f'EVENT#evt_{i}'},
+                'SK': {'S': 'METADATA'},
+                'eventId': {'S': f'evt_{i}'},
+                'name': {'S': f'Event {i}'},
+                'status': {'S': 'available'}
+            }
+        )
+        dynamodb_client.put_item(
+            TableName=table_name,
+            Item={
+                'PK': {'S': f'EVENT#evt_{i}'},
+                'SK': {'S': f'AUDIT#2024-01-01T00:00:0{i}Z'},
+                'action': {'S': 'EVENT_CREATED'}
+            }
+        )
+
+    list_req = {
+        'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/events'}},
+        'queryStringParameters': {'limit': '2'}
+    }
+    resp = lambda_handler(list_req, None)
+    assert resp['statusCode'] == 200
+    body = json.loads(resp['body'])
+    assert len(body['events']) == 2
+    assert 'nextCursor' in body
+
+    cursor = body['nextCursor']
+    list_req2 = {
+        'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/events'}},
+        'queryStringParameters': {'limit': '3', 'cursor': cursor}
+    }
+    resp2 = lambda_handler(list_req2, None)
+    assert resp2['statusCode'] == 200
+    body2 = json.loads(resp2['body'])
+    assert len(body2['events']) == 3
+
+
+def test_get_analytics(setup_table, dynamodb_client, table_name):
+    from app import lambda_handler
+    
+    dynamodb_client.put_item(
+        TableName=table_name,
+        Item={
+            'PK': {'S': 'EVENT#evt1'},
+            'SK': {'S': 'METADATA'},
+            'eventId': {'S': 'evt1'},
+            'status': {'S': 'available'}
+        }
+    )
+    dynamodb_client.put_item(
+        TableName=table_name,
+        Item={
+            'PK': {'S': 'EVENT#evt1'},
+            'SK': {'S': 'REG#user1@example.com'},
+            'status': {'S': 'registered'}
+        }
+    )
+    dynamodb_client.put_item(
+        TableName=table_name,
+        Item={
+            'PK': {'S': 'EVENT#evt1'},
+            'SK': {'S': 'REG#user2@example.com'},
+            'status': {'S': 'checked_in'}
+        }
+    )
+    
+    req = {
+        'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/analytics'}}
+    }
+    resp = lambda_handler(req, None)
+    assert resp['statusCode'] == 200
+    body = json.loads(resp['body'])
+    assert body['totalEvents'] == 1
+    assert body['upcomingEvents'] == 1
+    assert body['totalRegistrations'] == 2
+    assert body['attendanceRate'] == 50.0
+
+
 def test_route_not_found(setup_table):
     from app import lambda_handler
     event = {
@@ -185,3 +329,58 @@ def test_route_not_found(setup_table):
     }
     resp = lambda_handler(event, None)
     assert resp['statusCode'] == 404
+
+
+def test_list_event_registrations_route_precedence(setup_table, dynamodb_client):
+    from app import lambda_handler
+    table_name = os.environ['TABLE_NAME']
+    dynamodb_client.put_item(
+        TableName=table_name,
+        Item={
+            'PK': {'S': 'EVENT#evt123'},
+            'SK': {'S': 'REG#reg456'},
+            'ticketId': {'S': 'tkt789'},
+            'name': {'S': 'Jane Doe'},
+            'email': {'S': 'jane@example.com'},
+            'status': {'S': 'registered'}
+        }
+    )
+    
+    event_req = {
+        'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/events/evt123/registrations'}},
+        'pathParameters': {'eventId': 'evt123'}
+    }
+    resp = lambda_handler(event_req, None)
+    assert resp['statusCode'] == 200
+    body = json.loads(resp['body'])
+    assert isinstance(body, list)
+    assert len(body) == 1
+    assert body[0]['name'] == 'Jane Doe'
+    assert body[0]['ticketId'] == 'tkt789'
+
+
+def test_list_event_registrations_csv_format(setup_table, dynamodb_client):
+    from app import lambda_handler
+    table_name = os.environ['TABLE_NAME']
+    dynamodb_client.put_item(
+        TableName=table_name,
+        Item={
+            'PK': {'S': 'EVENT#evt123'},
+            'SK': {'S': 'REG#reg456'},
+            'ticketId': {'S': 'tkt789'},
+            'name': {'S': 'Jane Doe'},
+            'email': {'S': 'jane@example.com'},
+            'status': {'S': 'registered'}
+        }
+    )
+    
+    event_req = {
+        'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/events/evt123/registrations'}},
+        'pathParameters': {'eventId': 'evt123'},
+        'queryStringParameters': {'format': 'csv'}
+    }
+    resp = lambda_handler(event_req, None)
+    assert resp['statusCode'] == 200
+    assert resp['headers']['Content-Type'] == 'text/csv'
+    assert 'attachment; filename="event_evt123_registrations.csv"' in resp['headers']['Content-Disposition']
+    assert 'Jane Doe' in resp['body']

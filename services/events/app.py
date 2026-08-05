@@ -64,6 +64,10 @@ def lambda_handler(event: dict, context) -> dict:
         
     path_parameters = event.get('pathParameters') or {}
     event_id = path_parameters.get('eventId')
+    if not event_id and path.startswith('/api/v1/events/'):
+        parts = [p for p in path.strip('/').split('/') if p]
+        if len(parts) >= 4 and parts[2] == 'events':
+            event_id = parts[3]
     
     action = f"{http_method} {path}"
     
@@ -94,6 +98,12 @@ def lambda_handler(event: dict, context) -> dict:
             log_event(request_id, new_event_id, "create_event", start_time, "success")
             return response
             
+        elif path.startswith('/api/v1/events/') and path.endswith('/registrations') and event_id:
+            if http_method == 'GET':
+                response = list_event_registrations(event_id, event)
+                log_event(request_id, event_id, "list_registrations", start_time, "success")
+                return response
+
         elif path.startswith('/api/v1/events/') and event_id:
             if http_method == 'GET':
                 response = get_event(event_id)
@@ -111,12 +121,6 @@ def lambda_handler(event: dict, context) -> dict:
                 log_event(request_id, event_id, "delete_event", start_time, "success")
                 return response
                 
-        elif path.startswith('/api/v1/events/') and path.endswith('/registrations') and event_id:
-            if http_method == 'GET':
-                response = list_event_registrations(event_id, event)
-                log_event(request_id, event_id, "list_registrations", start_time, "success")
-                return response
-                
         # Route not found
         log_event(request_id, event_id or "N/A", action, start_time, "error")
         return build_response(404, format_error("Route not found", "NOT_FOUND"))
@@ -132,13 +136,14 @@ def list_events(event: dict) -> dict:
     limit = min(int(query_params.get('limit', '20')), 100)
     cursor = query_params.get('cursor')
     
+    filter_expr = Attr('SK').eq('METADATA')
+    if status_filter:
+        filter_expr &= Attr('status').eq(status_filter)
+        
     scan_kwargs = {
-        'FilterExpression': Attr('SK').eq('METADATA'),
+        'FilterExpression': filter_expr,
         'Limit': limit
     }
-    
-    if status_filter:
-        scan_kwargs['FilterExpression'] &= Attr('status').eq(status_filter)
     
     if cursor:
         try:
@@ -147,16 +152,29 @@ def list_events(event: dict) -> dict:
         except Exception:
             return build_response(400, format_error('Invalid cursor', 'BAD_REQUEST'))
     
-    response = table.scan(**scan_kwargs)
-    items = response.get('Items', [])
-    events = [clean_item(item) for item in items]
+    events = []
+    last_evaluated_key = None
     
+    while len(events) < limit:
+        response = table.scan(**scan_kwargs)
+        items = response.get('Items', [])
+        for item in items:
+            events.append(clean_item(item))
+            if len(events) == limit:
+                break
+                
+        last_evaluated_key = response.get('LastEvaluatedKey')
+        if not last_evaluated_key or len(events) == limit:
+            break
+            
+        scan_kwargs['ExclusiveStartKey'] = last_evaluated_key
+        
     result = {'events': events}
-    if 'LastEvaluatedKey' in response:
+    if last_evaluated_key:
         result['nextCursor'] = base64.b64encode(
-            json.dumps(response['LastEvaluatedKey'], default=str).encode('utf-8')
+            json.dumps(last_evaluated_key, default=str).encode('utf-8')
         ).decode('utf-8')
-    
+        
     return build_response(200, result)
 
 

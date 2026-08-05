@@ -12,20 +12,26 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 )
 
-var dbClient *dynamodb.Client
+type DynamoDBClient interface {
+	Query(ctx context.Context, params *dynamodb.QueryInput, optFns ...func(*dynamodb.Options)) (*dynamodb.QueryOutput, error)
+	TransactWriteItems(ctx context.Context, params *dynamodb.TransactWriteItemsInput, optFns ...func(*dynamodb.Options)) (*dynamodb.TransactWriteItemsOutput, error)
+}
+
+var dbClient DynamoDBClient
 var tableName string
 
 func init() {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
-	if err != nil {
-		log.Fatalf("unable to load SDK config, %v", err)
+	if err == nil {
+		dbClient = dynamodb.NewFromConfig(cfg)
+	} else {
+		log.Printf("unable to load SDK config: %v", err)
 	}
-	dbClient = dynamodb.NewFromConfig(cfg)
 	tableName = os.Getenv("TABLE_NAME")
 	if tableName == "" {
 		tableName = "kaluna-dev-table"
@@ -90,7 +96,10 @@ func handler(ctx context.Context, request events.APIGatewayV2HTTPRequest) (event
 	}
 
 	if method == "GET" && strings.Contains(path, "/check-ins") {
-		eventID := request.PathParameters["eventId"]
+		var eventID string
+		if request.PathParameters != nil {
+			eventID = request.PathParameters["eventId"]
+		}
 		resp := handleGetCheckins(ctx, eventID)
 		logEvent(reqID, eventID, action, startTime, "success")
 		return resp, nil
@@ -110,6 +119,10 @@ func handleCheckin(ctx context.Context, req events.APIGatewayV2HTTPRequest) even
 		return buildResponse(400, ErrorResponse{Success: false, Message: "Missing ticketId", ErrorCode: "BAD_REQUEST"})
 	}
 
+	if dbClient == nil {
+		return buildResponse(500, ErrorResponse{Success: false, Message: "DB client not initialized", ErrorCode: "INTERNAL_ERROR"})
+	}
+
 	// 1. Look up ticket using GSI1
 	gsiPK := "TICKET#" + body.TicketId
 	queryInput := &dynamodb.QueryInput{
@@ -122,8 +135,11 @@ func handleCheckin(ctx context.Context, req events.APIGatewayV2HTTPRequest) even
 	}
 
 	result, err := dbClient.Query(ctx, queryInput)
-	if err != nil || len(result.Items) == 0 {
-		return buildResponse(409, ErrorResponse{Success: false, Message: "Ticket already used or invalid", ErrorCode: "INVALID_TICKET"})
+	if err != nil {
+		return buildResponse(500, ErrorResponse{Success: false, Message: "Failed to query ticket", ErrorCode: "INTERNAL_ERROR"})
+	}
+	if len(result.Items) == 0 {
+		return buildResponse(404, ErrorResponse{Success: false, Message: "Ticket not found", ErrorCode: "NOT_FOUND"})
 	}
 
 	var regItem map[string]interface{}
@@ -137,9 +153,12 @@ func handleCheckin(ctx context.Context, req events.APIGatewayV2HTTPRequest) even
 		return buildResponse(409, ErrorResponse{Success: false, Message: "Ticket already used or invalid", ErrorCode: "INVALID_TICKET"})
 	}
 
-	pk := regItem["PK"].(string)
-	sk := regItem["SK"].(string)
-	email := regItem["email"].(string)
+	pk, pkOk := regItem["PK"].(string)
+	sk, skOk := regItem["SK"].(string)
+	email, emailOk := regItem["email"].(string)
+	if !pkOk || !skOk || !emailOk {
+		return buildResponse(500, ErrorResponse{Success: false, Message: "Invalid ticket data", ErrorCode: "INTERNAL_ERROR"})
+	}
 
 	now := time.Now().UTC().Format(time.RFC3339)
 	auditSK := "AUDIT#" + now
@@ -195,6 +214,10 @@ func handleCheckin(ctx context.Context, req events.APIGatewayV2HTTPRequest) even
 }
 
 func handleGetCheckins(ctx context.Context, eventID string) events.APIGatewayV2HTTPResponse {
+	if dbClient == nil {
+		return buildResponse(500, ErrorResponse{Success: false, Message: "DB client not initialized", ErrorCode: "INTERNAL_ERROR"})
+	}
+
 	pk := "EVENT#" + eventID
 	skPrefix := "REG#"
 
@@ -226,7 +249,7 @@ func handleGetCheckins(ctx context.Context, eventID string) events.APIGatewayV2H
 		delete(reg, "GSI1PK")
 		delete(reg, "GSI1SK")
 
-		if reg["status"] == "checked_in" {
+		if statusVal, ok := reg["status"].(string); ok && statusVal == "checked_in" {
 			checkedIn++
 		}
 		attendees = append(attendees, reg)

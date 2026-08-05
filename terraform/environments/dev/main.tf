@@ -231,10 +231,12 @@ resource "null_resource" "build_checkin" {
     always_run = "${timestamp()}"
   }
   provisioner "local-exec" {
-    command = "cd ../../../services/checkin && go build -o bootstrap main.go"
+    command     = "go build -o bootstrap main.go"
+    working_dir = "${path.module}/../../../services/checkin"
     environment = {
-      GOOS   = "linux"
-      GOARCH = "amd64"
+      CGO_ENABLED = "0"
+      GOOS        = "linux"
+      GOARCH      = "amd64"
     }
   }
 }

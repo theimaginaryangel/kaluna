@@ -231,10 +231,12 @@ resource "null_resource" "build_checkin" {
     always_run = "${timestamp()}"
   }
   provisioner "local-exec" {
-    command = "cd ../../../services/checkin && go build -o bootstrap main.go"
+    command     = "go build -o bootstrap main.go"
+    working_dir = "${path.module}/../../../services/checkin"
     environment = {
-      GOOS   = "linux"
-      GOARCH = "amd64"
+      CGO_ENABLED = "0"
+      GOOS        = "linux"
+      GOARCH      = "amd64"
     }
   }
 }
@@ -294,6 +296,118 @@ resource "aws_lambda_permission" "checkin_api_gw" {
   source_arn    = "${module.api_gateway.execution_arn}/*/*"
 }
 
+# --- Reminders Service ---
+
+module "reminders_iam" {
+  source             = "../../modules/iam"
+  role_name          = "kaluna-${local.environment}-reminders-role"
+  environment        = local.environment
+  dynamodb_table_arn = module.dynamodb.table_arn
+  enable_ses_send    = true
+}
+
+data "archive_file" "reminders_zip" {
+  type        = "zip"
+  source_dir  = "../../../services/reminders"
+  output_path = "${path.module}/reminders.zip"
+}
+
+resource "aws_lambda_function" "reminders" {
+  filename         = data.archive_file.reminders_zip.output_path
+  function_name    = "kaluna-${local.environment}-reminders"
+  role             = module.reminders_iam.role_arn
+  handler          = "app.lambda_handler"
+  runtime          = "python3.11"
+  source_code_hash = data.archive_file.reminders_zip.output_base64sha256
+
+  environment {
+    variables = {
+      TABLE_NAME   = module.dynamodb.table_name
+      SENDER_EMAIL = module.ses.sender_email
+    }
+  }
+
+  tracing_config {
+    mode = "Active"
+  }
+}
+
+resource "aws_cloudwatch_event_rule" "reminders_schedule" {
+  name                = "kaluna-${local.environment}-reminders-schedule"
+  description         = "Triggers the event reminders lambda daily"
+  schedule_expression = "cron(0 10 * * ? *)" # Runs every day at 10 AM UTC
+}
+
+resource "aws_cloudwatch_event_target" "reminders_target" {
+  rule      = aws_cloudwatch_event_rule.reminders_schedule.name
+  target_id = "RemindersLambda"
+  arn       = aws_lambda_function.reminders.arn
+}
+
+resource "aws_lambda_permission" "allow_cloudwatch_reminders" {
+  statement_id  = "AllowExecutionFromCloudWatch"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.reminders.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.reminders_schedule.arn
+}
+
+# --- Feedback Service ---
+
+module "feedback_iam" {
+  source             = "../../modules/iam"
+  role_name          = "kaluna-${local.environment}-feedback-role"
+  environment        = local.environment
+  dynamodb_table_arn = module.dynamodb.table_arn
+  enable_ses_send    = true
+}
+
+data "archive_file" "feedback_zip" {
+  type        = "zip"
+  source_dir  = "../../../services/feedback"
+  output_path = "${path.module}/feedback.zip"
+}
+
+resource "aws_lambda_function" "feedback" {
+  filename         = data.archive_file.feedback_zip.output_path
+  function_name    = "kaluna-${local.environment}-feedback"
+  role             = module.feedback_iam.role_arn
+  handler          = "app.lambda_handler"
+  runtime          = "python3.11"
+  source_code_hash = data.archive_file.feedback_zip.output_base64sha256
+
+  environment {
+    variables = {
+      TABLE_NAME   = module.dynamodb.table_name
+      SENDER_EMAIL = module.ses.sender_email
+    }
+  }
+
+  tracing_config {
+    mode = "Active"
+  }
+}
+
+resource "aws_cloudwatch_event_rule" "feedback_schedule" {
+  name                = "kaluna-${local.environment}-feedback-schedule"
+  description         = "Triggers the post-event feedback lambda daily"
+  schedule_expression = "cron(0 14 * * ? *)" # Runs every day at 2 PM UTC
+}
+
+resource "aws_cloudwatch_event_target" "feedback_target" {
+  rule      = aws_cloudwatch_event_rule.feedback_schedule.name
+  target_id = "FeedbackLambda"
+  arn       = aws_lambda_function.feedback.arn
+}
+
+resource "aws_lambda_permission" "allow_cloudwatch_feedback" {
+  statement_id  = "AllowExecutionFromCloudWatch"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.feedback.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.feedback_schedule.arn
+}
+
 # --- Observability ---
 
 module "monitoring" {
@@ -305,5 +419,7 @@ module "monitoring" {
     (aws_lambda_function.events.function_name)        = "events"
     (aws_lambda_function.registrations.function_name) = "registrations"
     (aws_lambda_function.checkin.function_name)       = "checkin"
+    (aws_lambda_function.reminders.function_name)     = "reminders"
+    (aws_lambda_function.feedback.function_name)      = "feedback"
   }
 }

@@ -69,12 +69,16 @@ def register(event_id: str, body: dict) -> dict:
         if field not in body:
             return build_response(400, format_error(f"Missing required field: {field}", "BAD_REQUEST"))
             
-    email = body['email']
+    email = body['email'].strip().lower()
     if not EMAIL_REGEX.match(email):
         return build_response(400, format_error('Invalid email format', 'BAD_REQUEST'))
         
     name = body['name']
     
+    event_item = table.get_item(Key={'PK': f"EVENT#{event_id}", 'SK': "METADATA"}).get('Item')
+    if not event_item:
+        return build_response(404, format_error("Event not found", "EVENT_NOT_FOUND"))
+
     registration_id = str(uuid.uuid4())
     ticket_id = str(uuid.uuid4())
     now = datetime.utcnow().isoformat() + 'Z'
@@ -143,7 +147,9 @@ def register(event_id: str, body: dict) -> dict:
             reasons = e.response.get('CancellationReasons', [])
             if len(reasons) > 0 and reasons[0].get('Code') == 'ConditionalCheckFailed':
                 event_item = table.get_item(Key={'PK': f"EVENT#{event_id}", 'SK': "METADATA"}).get('Item')
-                if event_item and event_item.get('waitlistEnabled'):
+                if not event_item:
+                    return build_response(404, format_error("Event not found", "EVENT_NOT_FOUND"))
+                if event_item.get('waitlistEnabled'):
                     reg_item['status'] = 'waitlisted'
                     audit_item['details'] = f"Ticket {ticket_id} waitlisted"
                     try:
@@ -248,11 +254,12 @@ def cancel_registration(ticket_id: str) -> dict:
         return build_response(404, format_error("Ticket not found", "NOT_FOUND"))
         
     reg_item = items[0]
-    if reg_item.get('status') == 'cancelled':
+    current_status = reg_item.get('status')
+    if current_status == 'cancelled':
         return build_response(200, {"message": "Already cancelled"})
         
     event_id = reg_item['eventId']
-    email = reg_item['email']
+    email = reg_item['email'].strip().lower()
     now = datetime.utcnow().isoformat() + 'Z'
     
     audit_item = {
@@ -263,130 +270,134 @@ def cancel_registration(ticket_id: str) -> dict:
         'details': f"Ticket {ticket_id} cancelled"
     }
     
-    # 2. Update registration status and increment seats
-    try:
-        dynamodb.meta.client.transact_write_items(
-            TransactItems=[
-                {
-                    'Update': {
-                        'TableName': table_name,
-                        'Key': {
-                            'PK': reg_item['PK'],
-                            'SK': reg_item['SK']
-                        },
-                        'UpdateExpression': "SET #s = :cancelled",
-                        'ExpressionAttributeNames': {'#s': 'status'},
-                        'ExpressionAttributeValues': {':cancelled': 'cancelled'}
-                    }
+    transact_items = [
+        {
+            'Update': {
+                'TableName': table_name,
+                'Key': {
+                    'PK': reg_item['PK'],
+                    'SK': reg_item['SK']
                 },
-                {
-                    'Update': {
-                        'TableName': table_name,
-                        'Key': {
-                            'PK': f"EVENT#{event_id}",
-                            'SK': "METADATA"
-                        },
-                        'UpdateExpression': "SET seatsRemaining = seatsRemaining + :one",
-                        'ExpressionAttributeValues': {
-                            ':one': 1
-                        }
-                    }
+                'UpdateExpression': "SET #s = :cancelled",
+                'ExpressionAttributeNames': {'#s': 'status'},
+                'ExpressionAttributeValues': {':cancelled': 'cancelled'}
+            }
+        },
+        {
+            'Put': {
+                'TableName': table_name,
+                'Item': audit_item
+            }
+        }
+    ]
+    
+    # Only increment seatsRemaining if ticket was registered (not waitlisted)
+    if current_status == 'registered':
+        transact_items.append({
+            'Update': {
+                'TableName': table_name,
+                'Key': {
+                    'PK': f"EVENT#{event_id}",
+                    'SK': "METADATA"
                 },
-                {
-                    'Put': {
-                        'TableName': table_name,
-                        'Item': audit_item
-                    }
+                'UpdateExpression': "SET seatsRemaining = seatsRemaining + :one",
+                'ExpressionAttributeValues': {
+                    ':one': 1
                 }
-            ]
-        )
+            }
+        })
+
+    # 2. Update registration status
+    try:
+        dynamodb.meta.client.transact_write_items(TransactItems=transact_items)
     except ClientError as e:
         return build_response(500, format_error(f"Transaction failed: {str(e)}", "INTERNAL_ERROR"))
         
-    # 3. Check for waitlisted users and promote the earliest one
-    try:
-        waitlist_response = table.query(
-            KeyConditionExpression=Key('PK').eq(f"EVENT#{event_id}") & Key('SK').begins_with("REG#"),
-            FilterExpression=Attr('status').eq('waitlisted')
-        )
-        waitlisted_users = waitlist_response.get('Items', [])
-        if waitlisted_users:
-            waitlisted_users.sort(key=lambda x: x.get('registeredAt', ''))
-            promoted_user = waitlisted_users[0]
-            promoted_ticket_id = promoted_user['ticketId']
-            
-            p_audit_item = {
-                'PK': f"EVENT#{event_id}",
-                'SK': f"AUDIT#{now}_promo",
-                'action': "REGISTRATION_PROMOTED",
-                'actor': "system",
-                'details': f"Ticket {promoted_ticket_id} promoted from waitlist"
-            }
-            
-            dynamodb.meta.client.transact_write_items(
-                TransactItems=[
-                    {
-                        'Update': {
-                            'TableName': table_name,
-                            'Key': {
-                                'PK': promoted_user['PK'],
-                                'SK': promoted_user['SK']
-                            },
-                            'UpdateExpression': "SET #s = :registered",
-                            'ExpressionAttributeNames': {'#s': 'status'},
-                            'ExpressionAttributeValues': {':registered': 'registered'}
-                        }
-                    },
-                    {
-                        'Update': {
-                            'TableName': table_name,
-                            'Key': {
-                                'PK': f"EVENT#{event_id}",
-                                'SK': "METADATA"
-                            },
-                            'UpdateExpression': "SET seatsRemaining = seatsRemaining - :one",
-                            'ConditionExpression': "seatsRemaining > :zero",
-                            'ExpressionAttributeValues': {
-                                ':one': 1,
-                                ':zero': 0
+    # 3. Check for waitlisted users and promote the earliest one (only if a registered ticket was cancelled)
+    if current_status == 'registered':
+        try:
+            waitlist_response = table.query(
+                KeyConditionExpression=Key('PK').eq(f"EVENT#{event_id}") & Key('SK').begins_with("REG#"),
+                FilterExpression=Attr('status').eq('waitlisted')
+            )
+            waitlisted_users = waitlist_response.get('Items', [])
+            if waitlisted_users:
+                waitlisted_users.sort(key=lambda x: x.get('registeredAt', ''))
+                promoted_user = waitlisted_users[0]
+                promoted_ticket_id = promoted_user['ticketId']
+                
+                p_audit_item = {
+                    'PK': f"EVENT#{event_id}",
+                    'SK': f"AUDIT#{now}_promo",
+                    'action': "REGISTRATION_PROMOTED",
+                    'actor': "system",
+                    'details': f"Ticket {promoted_ticket_id} promoted from waitlist"
+                }
+                
+                dynamodb.meta.client.transact_write_items(
+                    TransactItems=[
+                        {
+                            'Update': {
+                                'TableName': table_name,
+                                'Key': {
+                                    'PK': promoted_user['PK'],
+                                    'SK': promoted_user['SK']
+                                },
+                                'UpdateExpression': "SET #s = :registered",
+                                'ExpressionAttributeNames': {'#s': 'status'},
+                                'ExpressionAttributeValues': {':registered': 'registered'}
+                            }
+                        },
+                        {
+                            'Update': {
+                                'TableName': table_name,
+                                'Key': {
+                                    'PK': f"EVENT#{event_id}",
+                                    'SK': "METADATA"
+                                },
+                                'UpdateExpression': "SET seatsRemaining = seatsRemaining - :one",
+                                'ConditionExpression': "seatsRemaining > :zero",
+                                'ExpressionAttributeValues': {
+                                    ':one': 1,
+                                    ':zero': 0
+                                }
+                            }
+                        },
+                        {
+                            'Put': {
+                                'TableName': table_name,
+                                'Item': p_audit_item
                             }
                         }
-                    },
-                    {
-                        'Put': {
-                            'TableName': table_name,
-                            'Item': p_audit_item
-                        }
+                    ]
+                )
+                
+                # Send email to promoted user
+                qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={promoted_ticket_id}"
+                html_body = f"""
+                <html>
+                <body>
+                    <h1>You're off the waitlist!</h1>
+                    <p>Hi {promoted_user.get('name', 'there')},</p>
+                    <p>A spot opened up and you have successfully been registered for the event.</p>
+                    <p>Your Ticket ID is: <strong>{promoted_ticket_id}</strong></p>
+                    <p>Please present the QR code below at check-in:</p>
+                    <img src="{qr_url}" alt="Ticket QR Code" />
+                </body>
+                </html>
+                """
+                ses.send_email(
+                    Source=sender_email,
+                    Destination={'ToAddresses': [promoted_user['email']]},
+                    Message={
+                        'Subject': {'Data': 'You are off the waitlist! Here is your ticket'},
+                        'Body': {'Html': {'Data': html_body}}
                     }
-                ]
-            )
+                )
+                
+        except Exception as e:
+            print(f"Failed to promote waitlisted user: {e}")
             
-            # Send email to promoted user
-            qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={promoted_ticket_id}"
-            html_body = f"""
-            <html>
-            <body>
-                <h1>You're off the waitlist!</h1>
-                <p>Hi {promoted_user.get('name', 'there')},</p>
-                <p>A spot opened up and you have successfully been registered for the event.</p>
-                <p>Your Ticket ID is: <strong>{promoted_ticket_id}</strong></p>
-                <p>Please present the QR code below at check-in:</p>
-                <img src="{qr_url}" alt="Ticket QR Code" />
-            </body>
-            </html>
-            """
-            ses.send_email(
-                Source=sender_email,
-                Destination={'ToAddresses': [promoted_user['email']]},
-                Message={
-                    'Subject': {'Data': 'You are off the waitlist! Here is your ticket'},
-                    'Body': {'Html': {'Data': html_body}}
-                }
-            )
-            
-    except Exception as e:
-        print(f"Failed to promote waitlisted user: {e}")
-        
     return build_response(200, {"message": "Cancelled successfully, seat released"})
 
 def clean_item(item: dict) -> dict:

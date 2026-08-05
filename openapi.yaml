@@ -47,8 +47,13 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items: { $ref: "#/components/schemas/Event" }
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items: { $ref: "#/components/schemas/Event" }
+                  nextCursor:
+                    type: string
     post:
       summary: Create an event (admin only)
       tags: [Admin]
@@ -137,14 +142,24 @@ paths:
       security: [{ CognitoAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EventId"
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
       responses:
         "200":
-          description: Registrations, with a CSV export link
+          description: Registrations list or CSV export
           content:
             application/json:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/Registration" }
+            text/csv:
+              schema:
+                type: string
 
   /events/{eventId}/check-ins:
     get:
