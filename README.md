@@ -47,4 +47,23 @@ openapi.yaml      API contract
 
 ## Status
 
-Design phase complete. Build in progress — see [`12-future-roadmap.md`](docs/12-future-roadmap.md) for what's intentionally not built yet.
+Backend build (Phases 1-3) is complete. The system is ready to be deployed. The frontend implementation is currently pending.
+
+## Quick Start (Deployment)
+
+1. **Authenticate with AWS**: Ensure your AWS CLI is configured with an IAM user that has administrative privileges.
+   ```bash
+   aws configure
+   ```
+2. **Deploy via Terraform**:
+   ```bash
+   cd terraform/environments/dev
+   terraform init
+   terraform apply
+   ```
+3. **Verify Email**: AWS will send a verification link to your designated sender email (e.g., `contact@bennyduah.com`). Click it to allow Amazon SES to send ticket confirmations.
+4. **Create Admin User**: Cognito public sign-ups are disabled. Create your admin account via CLI:
+   ```bash
+   aws cognito-idp admin-create-user --user-pool-id <YOUR_POOL_ID> --username contact@bennyduah.com
+   ```
+5. **Test**: Hit the `/health` endpoint on your newly generated API Gateway URL to verify the system is live!
