@@ -8,5 +8,5 @@ terraform {
 }
 
 provider "aws" {
-  region = "eu-west-1" # As implied in openapi.yaml
+  region = "us-east-1"
 }
