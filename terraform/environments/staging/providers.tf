@@ -7,11 +7,11 @@ terraform {
   }
 
   backend "s3" {
-    bucket       = "kaluna-terraform-state-496795891920"
-    key          = "staging/terraform.tfstate"
-    region       = "us-east-1"
-    use_lockfile = true
-    encrypt      = true
+    bucket         = "kaluna-terraform-state-496795891920"
+    key            = "staging/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "kaluna-terraform-locks"
+    encrypt        = true
   }
 }
 
