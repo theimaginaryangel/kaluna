@@ -132,6 +132,12 @@ resource "aws_apigatewayv2_route" "analytics_get" {
   authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
 }
 
+resource "aws_apigatewayv2_route" "health_get" {
+  api_id    = module.api_gateway.api_id
+  route_key = "GET /api/v1/health"
+  target    = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
+}
+
 resource "aws_lambda_permission" "events_api_gw" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
