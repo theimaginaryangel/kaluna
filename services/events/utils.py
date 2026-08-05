@@ -1,5 +1,13 @@
 import json
 import time
+import decimal
+
+def _decimal_to_native(obj):
+    if isinstance(obj, decimal.Decimal):
+        if obj == obj.to_integral_value():
+            return int(obj)
+        return float(obj)
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
 def format_error(message: str, error_code: str) -> dict:
     return {
@@ -14,7 +22,7 @@ def build_response(status_code: int, body: dict) -> dict:
         "headers": {
             "Content-Type": "application/json"
         },
-        "body": json.dumps(body)
+        "body": json.dumps(body, default=_decimal_to_native)
     }
 
 def log_event(request_id: str, event_id: str, action: str, start_time: float, status: str) -> None:
