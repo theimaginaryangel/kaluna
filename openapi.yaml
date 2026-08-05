@@ -24,7 +24,7 @@ paths:
                 properties:
                   status: { type: string, example: healthy }
                   version: { type: string, example: "1.0.0" }
-                  region: { type: string, example: eu-west-1 }
+                  region: { type: string, example: us-east-1 }
                   timestamp: { type: string, format: date-time }
 
   /events:

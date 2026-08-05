@@ -6,19 +6,104 @@ on:
   pull_request:
     branches: [develop, main]
 
+env:
+  TF_VERSION: '1.5.7'
+  GO_VERSION: '1.21'
+  PYTHON_VERSION: '3.11'
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Python + Go unit tests wired up in Phase 1
-      - run: echo "test stage — placeholder until Phase 1 Lambdas exist"
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      
+      - name: Install Python dependencies
+        run: |
+          pip install pytest moto boto3
+      
+      - name: Run Events tests
+        run: |
+          cd services/events
+          python -m pytest tests/ -v
+      
+      - name: Run Registrations tests
+        run: |
+          cd services/registrations
+          python -m pytest tests/ -v
+      
+      - name: Run Check-in tests
+        run: |
+          cd services/checkin
+          go test -v ./...
 
   deploy:
     needs: test
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: us-east-1
     steps:
       - uses: actions/checkout@v4
-      # terraform plan/apply wired up in Phase 1
-      - run: echo "deploy stage — placeholder until Terraform modules exist"
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Determine environment
+        id: env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment=prod" >> $GITHUB_OUTPUT
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform/environments/${{ steps.env.outputs.environment }}
+      
+      - name: Terraform Plan
+        run: terraform plan -no-color -out=tfplan
+        working-directory: terraform/environments/${{ steps.env.outputs.environment }}
+      
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+        working-directory: terraform/environments/${{ steps.env.outputs.environment }}
+      
+      - name: Get API URL
+        id: api
+        run: |
+          API_URL=$(terraform output -raw api_url)
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+        working-directory: terraform/environments/${{ steps.env.outputs.environment }}
+      
+      - name: Smoke Test
+        run: |
+          echo "Running smoke test against ${{ steps.api.outputs.api_url }}/api/v1/health"
+          RESPONSE=$(curl -s -o /dev/null -w '%{http_code}' "${{ steps.api.outputs.api_url }}/api/v1/health")
+          if [ "$RESPONSE" != "200" ]; then
+            echo "Smoke test FAILED — /api/v1/health returned $RESPONSE"
+            exit 1
+          fi
+          echo "Smoke test PASSED"

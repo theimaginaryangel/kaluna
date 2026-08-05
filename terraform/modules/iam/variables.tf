@@ -25,3 +25,9 @@ variable "enable_ses_send" {
   type        = bool
   default     = false
 }
+
+variable "enable_xray_access" {
+  description = "Whether to attach AWS X-Ray permissions"
+  type        = bool
+  default     = true
+}

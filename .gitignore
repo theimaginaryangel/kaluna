@@ -16,6 +16,10 @@ venv/
 *.exe
 *.test
 /services/checkin/checkin
+bootstrap
+
+# Terraform outputs
+*.zip
 
 # Node (frontend)
 node_modules/

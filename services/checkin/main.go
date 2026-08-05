@@ -83,7 +83,7 @@ func handler(ctx context.Context, request events.APIGatewayV2HTTPRequest) (event
 	path := request.RequestContext.HTTP.Path
 	action := method + " " + path
 
-	if method == "POST" && strings.HasSuffix(path, "/check-in") {
+	if method == "POST" && strings.HasSuffix(path, "/api/v1/check-in") {
 		resp := handleCheckin(ctx, request)
 		logEvent(reqID, "N/A", action, startTime, "success") // could extract event ID if successful
 		return resp, nil

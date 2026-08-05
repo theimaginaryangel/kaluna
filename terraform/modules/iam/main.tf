@@ -12,7 +12,7 @@ data "aws_iam_policy_document" "lambda_assume_role" {
 resource "aws_iam_role" "lambda_role" {
   name               = var.role_name
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
-  
+
   tags = {
     Environment = var.environment
     Project     = "Kaluna"
@@ -69,4 +69,10 @@ resource "aws_iam_role_policy" "ses_policy" {
   name   = "${var.role_name}-ses-policy"
   role   = aws_iam_role.lambda_role.id
   policy = data.aws_iam_policy_document.ses_access[0].json
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_xray_execution" {
+  count      = var.enable_xray_access ? 1 : 0
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess"
 }

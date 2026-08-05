@@ -2,6 +2,8 @@ import json
 import os
 import uuid
 import time
+import base64
+import re
 from datetime import datetime
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
@@ -11,7 +13,44 @@ dynamodb = boto3.resource('dynamodb')
 table_name = os.environ.get('TABLE_NAME', 'kaluna-dev-table')
 table = dynamodb.Table(table_name)
 
-def lambda_handler(event, context):
+def compute_status(capacity: int, seats_remaining: int) -> str:
+    if seats_remaining <= 0:
+        return 'sold_out'
+    elif seats_remaining / capacity <= 0.2:
+        return 'limited'
+    return 'available'
+
+def validate_event_input(body: dict, is_update: bool = False) -> str | None:
+    """Returns an error message if validation fails, None if valid."""
+    if not is_update:
+        required = ['name', 'date', 'venue', 'capacity']
+        for field in required:
+            if field not in body:
+                return f'Missing required field: {field}'
+    
+    if 'capacity' in body:
+        try:
+            cap = int(body['capacity'])
+            if cap < 1 or cap > 100000:
+                return 'Capacity must be between 1 and 100,000'
+        except (ValueError, TypeError):
+            return 'Capacity must be a number'
+    
+    if 'date' in body:
+        try:
+            datetime.strptime(body['date'], '%Y-%m-%d')
+        except ValueError:
+            return 'Date must be in YYYY-MM-DD format'
+    
+    if 'name' in body and (not isinstance(body['name'], str) or len(body['name'].strip()) == 0):
+        return 'Name cannot be empty'
+        
+    if 'waitlistEnabled' in body and not isinstance(body['waitlistEnabled'], bool):
+        return 'waitlistEnabled must be a boolean'
+    
+    return None
+
+def lambda_handler(event: dict, context) -> dict:
     start_time = time.time()
     request_id = event.get('requestContext', {}).get('requestId', 'unknown-request')
     http_method = event.get('requestContext', {}).get('http', {}).get('method', '')
@@ -29,23 +68,33 @@ def lambda_handler(event, context):
     action = f"{http_method} {path}"
     
     try:
-        if path == '/events' and http_method == 'GET':
+        if path == '/api/v1/health' and http_method == 'GET':
+            import datetime as dt
+            health = {
+                'status': 'healthy',
+                'version': '1.0.0',
+                'region': os.environ.get('AWS_REGION', 'us-east-1'),
+                'timestamp': dt.datetime.utcnow().isoformat() + 'Z'
+            }
+            return build_response(200, health)
+            
+        elif path == '/api/v1/events' and http_method == 'GET':
             response = list_events(event)
             log_event(request_id, "N/A", "list_events", start_time, "success")
             return response
             
-        elif path == '/analytics' and http_method == 'GET':
+        elif path == '/api/v1/analytics' and http_method == 'GET':
             response = get_analytics()
             log_event(request_id, "N/A", "get_analytics", start_time, "success")
             return response
             
-        elif path == '/events' and http_method == 'POST':
+        elif path == '/api/v1/events' and http_method == 'POST':
             body = json.loads(event.get('body', '{}'))
             response, new_event_id = create_event(body)
             log_event(request_id, new_event_id, "create_event", start_time, "success")
             return response
             
-        elif path.startswith('/events/') and event_id:
+        elif path.startswith('/api/v1/events/') and event_id:
             if http_method == 'GET':
                 response = get_event(event_id)
                 log_event(request_id, event_id, "get_event", start_time, "success")
@@ -62,9 +111,9 @@ def lambda_handler(event, context):
                 log_event(request_id, event_id, "delete_event", start_time, "success")
                 return response
                 
-        elif path.startswith('/events/') and path.endswith('/registrations') and event_id:
+        elif path.startswith('/api/v1/events/') and path.endswith('/registrations') and event_id:
             if http_method == 'GET':
-                response = list_event_registrations(event_id)
+                response = list_event_registrations(event_id, event)
                 log_event(request_id, event_id, "list_registrations", start_time, "success")
                 return response
                 
@@ -77,13 +126,11 @@ def lambda_handler(event, context):
         return build_response(500, format_error("Internal server error", "INTERNAL_ERROR"))
 
 
-def list_events(event):
-    # As per docs, single table without explicit GSI for all events
-    # We scan for SK = METADATA. (In production with many events, we'd add a GSI)
-    # Openapi specifies status, limit, cursor
+def list_events(event: dict) -> dict:
     query_params = event.get('queryStringParameters') or {}
     status_filter = query_params.get('status')
-    limit = int(query_params.get('limit', '20'))
+    limit = min(int(query_params.get('limit', '20')), 100)
+    cursor = query_params.get('cursor')
     
     scan_kwargs = {
         'FilterExpression': Attr('SK').eq('METADATA'),
@@ -92,27 +139,36 @@ def list_events(event):
     
     if status_filter:
         scan_kwargs['FilterExpression'] &= Attr('status').eq(status_filter)
-        
+    
+    if cursor:
+        try:
+            decoded = json.loads(base64.b64decode(cursor).decode('utf-8'))
+            scan_kwargs['ExclusiveStartKey'] = decoded
+        except Exception:
+            return build_response(400, format_error('Invalid cursor', 'BAD_REQUEST'))
+    
     response = table.scan(**scan_kwargs)
     items = response.get('Items', [])
+    events = [clean_item(item) for item in items]
     
-    # Strip PK and SK from response
-    events = []
-    for item in items:
-        events.append(clean_item(item))
-        
-    return build_response(200, events)
+    result = {'events': events}
+    if 'LastEvaluatedKey' in response:
+        result['nextCursor'] = base64.b64encode(
+            json.dumps(response['LastEvaluatedKey'], default=str).encode('utf-8')
+        ).decode('utf-8')
+    
+    return build_response(200, result)
 
 
-def create_event(body):
-    required_fields = ['name', 'date', 'venue', 'capacity']
-    for field in required_fields:
-        if field not in body:
-            return build_response(400, format_error(f"Missing required field: {field}", "BAD_REQUEST")), "N/A"
+def create_event(body: dict) -> tuple[dict, str]:
+    error = validate_event_input(body)
+    if error:
+        return build_response(400, format_error(error, 'BAD_REQUEST')), 'N/A'
             
     event_id = str(uuid.uuid4())
     now = datetime.utcnow().isoformat() + 'Z'
     
+    capacity = int(body['capacity'])
     item = {
         'PK': f"EVENT#{event_id}",
         'SK': "METADATA",
@@ -120,9 +176,10 @@ def create_event(body):
         'name': body['name'],
         'date': body['date'],
         'venue': body['venue'],
-        'capacity': int(body['capacity']),
-        'seatsRemaining': int(body['capacity']),
-        'status': 'available',
+        'capacity': capacity,
+        'seatsRemaining': capacity,
+        'status': compute_status(capacity, capacity),
+        'waitlistEnabled': body.get('waitlistEnabled', False),
         'createdAt': now
     }
     
@@ -155,7 +212,7 @@ def create_event(body):
     return build_response(201, clean_item(item)), event_id
 
 
-def get_event(event_id):
+def get_event(event_id: str) -> dict:
     response = table.get_item(
         Key={
             'PK': f"EVENT#{event_id}",
@@ -170,7 +227,11 @@ def get_event(event_id):
     return build_response(200, clean_item(item))
 
 
-def update_event(event_id, body):
+def update_event(event_id: str, body: dict) -> dict:
+    error = validate_event_input(body, is_update=True)
+    if error:
+        return build_response(400, format_error(error, 'BAD_REQUEST'))
+
     # First get the event to make sure it exists
     get_res = table.get_item(Key={'PK': f"EVENT#{event_id}", 'SK': "METADATA"})
     if 'Item' not in get_res:
@@ -180,7 +241,20 @@ def update_event(event_id, body):
     expr_attr_values = {}
     expr_attr_names = {}
     
-    updatable_fields = ['name', 'date', 'venue', 'capacity']
+    updatable_fields = ['name', 'date', 'venue', 'capacity', 'waitlistEnabled']
+    
+    if 'capacity' in body:
+        old_item = get_res['Item']
+        old_cap = int(old_item.get('capacity', 0))
+        old_rem = int(old_item.get('seatsRemaining', 0))
+        taken = old_cap - old_rem
+        new_cap = int(body['capacity'])
+        new_rem = new_cap - taken
+        
+        body['seatsRemaining'] = new_rem
+        body['status'] = compute_status(new_cap, new_rem)
+        updatable_fields.extend(['seatsRemaining', 'status'])
+        
     updates = []
     
     for field in updatable_fields:
@@ -232,7 +306,7 @@ def update_event(event_id, body):
     return build_response(200, clean_item(updated_item))
 
 
-def delete_event(event_id):
+def delete_event(event_id: str) -> dict:
     now = datetime.utcnow().isoformat() + 'Z'
     audit_item = {
         'PK': f"EVENT#{event_id}",
@@ -264,7 +338,7 @@ def delete_event(event_id):
     
     return build_response(204, {})
 
-def clean_item(item):
+def clean_item(item: dict) -> dict:
     cleaned = item.copy()
     cleaned.pop('PK', None)
     cleaned.pop('SK', None)
@@ -272,15 +346,38 @@ def clean_item(item):
     cleaned.pop('GSI1SK', None)
     return cleaned
 
-def list_event_registrations(event_id):
+def list_event_registrations(event_id: str, event_obj: dict) -> dict:
     response = table.query(
         KeyConditionExpression=Key('PK').eq(f"EVENT#{event_id}") & Key('SK').begins_with("REG#")
     )
     items = response.get('Items', [])
     registrations = [clean_item(item) for item in items]
+    
+    query_params = event_obj.get('queryStringParameters') or {}
+    if query_params.get('format') == 'csv' or query_params.get('export') == 'csv':
+        import io
+        import csv
+        
+        output = io.StringIO()
+        if len(registrations) > 0:
+            writer = csv.DictWriter(output, fieldnames=registrations[0].keys())
+            writer.writeheader()
+            writer.writerows(registrations)
+        else:
+            output.write("No registrations found.")
+            
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'text/csv',
+                'Content-Disposition': f'attachment; filename="event_{event_id}_registrations.csv"'
+            },
+            'body': output.getvalue()
+        }
+        
     return build_response(200, registrations)
 
-def get_analytics():
+def get_analytics() -> dict:
     # In a real heavy production app, we would maintain these counters transactionally or use a secondary index.
     # For this scale, a single scan to aggregate data is acceptable.
     response = table.scan()

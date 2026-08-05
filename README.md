@@ -6,6 +6,7 @@ Built as an Azubi Africa capstone, engineered like a small production system rat
 
 ## Stack
 
+- **Architecture**: API Gateway -> Lambda -> DynamoDB
 - **Compute**: AWS Lambda — Python (events, registrations), Go (check-in)
 - **API**: Amazon API Gateway, `/api/v1`
 - **Data**: DynamoDB, single-table design
@@ -47,7 +48,7 @@ openapi.yaml      API contract
 
 ## Status
 
-Backend build (Phases 1-3) is complete. The system is ready to be deployed. The frontend implementation is currently pending.
+Backend build (Phases 1-6) is fully complete. The system is ready to be deployed. The frontend implementation is currently pending.
 
 ## Quick Start (Deployment)
 
