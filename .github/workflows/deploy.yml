@@ -101,9 +101,14 @@ jobs:
       - name: Smoke Test
         run: |
           echo "Running smoke test against ${{ steps.api.outputs.api_url }}/api/v1/health"
-          RESPONSE=$(curl -s -o /dev/null -w '%{http_code}' "${{ steps.api.outputs.api_url }}/api/v1/health")
-          if [ "$RESPONSE" != "200" ]; then
-            echo "Smoke test FAILED — /api/v1/health returned $RESPONSE"
-            exit 1
-          fi
-          echo "Smoke test PASSED"
+          for i in {1..6}; do
+            RESPONSE=$(curl -s -o /dev/null -w '%{http_code}' "${{ steps.api.outputs.api_url }}/api/v1/health")
+            if [ "$RESPONSE" == "200" ]; then
+              echo "Smoke test PASSED"
+              exit 0
+            fi
+            echo "Attempt $i failed ($RESPONSE). Retrying in 5 seconds..."
+            sleep 5
+          done
+          echo "Smoke test FAILED — /api/v1/health never returned 200"
+          exit 1
