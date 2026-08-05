@@ -145,7 +145,7 @@ def register(event_id, body):
     # Send SES Email asynchronously (best effort in this handler)
     try:
         qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={ticket_id}"
-        html_body = f\"\"\"
+        html_body = f"""
         <html>
         <body>
             <h1>Registration Confirmed!</h1>
@@ -156,7 +156,7 @@ def register(event_id, body):
             <img src="{qr_url}" alt="Ticket QR Code" />
         </body>
         </html>
-        \"\"\"
+        """
         
         ses.send_email(
             Source=sender_email,
