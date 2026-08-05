@@ -15,7 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 )
 
 var dbClient *dynamodb.Client
@@ -140,7 +139,6 @@ func handleCheckin(ctx context.Context, req events.APIGatewayV2HTTPRequest) even
 
 	pk := regItem["PK"].(string)
 	sk := regItem["SK"].(string)
-	eventID := regItem["eventId"].(string)
 	email := regItem["email"].(string)
 
 	now := time.Now().UTC().Format(time.RFC3339)
