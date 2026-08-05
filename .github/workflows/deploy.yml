@@ -1,4 +1,4 @@
-name: EventFlow CI/CD
+name: Kaluna CI/CD
 
 on:
   push:

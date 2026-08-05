@@ -1,12 +1,12 @@
 openapi: 3.0.3
 info:
-  title: EventFlow API
+  title: Kaluna API
   description: Serverless event registration and ticketing platform.
   version: "1.0.0"
 servers:
-  - url: https://api.eventflow.example.com/api/v1
+  - url: https://api.kaluna.bennyduah.com/api/v1
     description: Production
-  - url: https://dev-api.eventflow.example.com/api/v1
+  - url: https://dev-api.kaluna.bennyduah.com/api/v1
     description: Development
 
 paths:

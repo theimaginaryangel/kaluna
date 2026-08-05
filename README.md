@@ -1,4 +1,4 @@
-# EventFlow
+# Kaluna
 
 A serverless event registration and ticketing platform on AWS — built to replace Microsoft Forms + Excel with a real API, QR-based check-in, and an admin dashboard with live capacity and attendance tracking.
 
