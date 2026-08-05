@@ -15,7 +15,7 @@ resource "aws_iam_role" "lambda_role" {
   
   tags = {
     Environment = var.environment
-    Project     = "EventFlow"
+    Project     = "Kaluna"
   }
 }
 

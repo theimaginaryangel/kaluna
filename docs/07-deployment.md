@@ -2,7 +2,7 @@
 
 ## Environments
 
-`dev` → `staging` → `prod`, each with its own Terraform state and resource naming (`eventflow-{env}-*`).
+`dev` → `staging` → `prod`, each with its own Terraform state and resource naming (`kaluna-{env}-*`).
 
 ## Pipeline (GitHub Actions)
 

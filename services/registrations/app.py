@@ -10,7 +10,7 @@ from utils import format_error, build_response, log_event
 
 dynamodb = boto3.resource('dynamodb')
 ses = boto3.client('ses', region_name=os.environ.get('AWS_DEFAULT_REGION', 'eu-west-1'))
-table_name = os.environ.get('TABLE_NAME', 'eventflow-dev-table')
+table_name = os.environ.get('TABLE_NAME', 'kaluna-dev-table')
 sender_email = os.environ.get('SENDER_EMAIL', 'contact@bennyduah.com')
 table = dynamodb.Table(table_name)
 

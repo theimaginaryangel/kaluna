@@ -29,7 +29,7 @@ func init() {
 	dbClient = dynamodb.NewFromConfig(cfg)
 	tableName = os.Getenv("TABLE_NAME")
 	if tableName == "" {
-		tableName = "eventflow-dev-table"
+		tableName = "kaluna-dev-table"
 	}
 }
 

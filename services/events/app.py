@@ -8,7 +8,7 @@ from boto3.dynamodb.conditions import Key, Attr
 from utils import format_error, build_response, log_event
 
 dynamodb = boto3.resource('dynamodb')
-table_name = os.environ.get('TABLE_NAME', 'eventflow-dev-table')
+table_name = os.environ.get('TABLE_NAME', 'kaluna-dev-table')
 table = dynamodb.Table(table_name)
 
 def lambda_handler(event, context):

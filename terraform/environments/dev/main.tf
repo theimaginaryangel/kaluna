@@ -4,13 +4,13 @@ locals {
 
 module "dynamodb" {
   source      = "../../modules/dynamodb"
-  table_name  = "eventflow-${local.environment}-table"
+  table_name  = "kaluna-${local.environment}-table"
   environment = local.environment
 }
 
 module "api_gateway" {
   source      = "../../modules/api_gateway"
-  api_name    = "eventflow-${local.environment}-api"
+  api_name    = "kaluna-${local.environment}-api"
   environment = local.environment
 }
 
@@ -24,7 +24,7 @@ module "ses" {
 
 module "events_iam" {
   source             = "../../modules/iam"
-  role_name          = "eventflow-${local.environment}-events-role"
+  role_name          = "kaluna-${local.environment}-events-role"
   environment        = local.environment
   dynamodb_table_arn = module.dynamodb.table_arn
 }
@@ -37,7 +37,7 @@ data "archive_file" "events_zip" {
 
 resource "aws_lambda_function" "events" {
   filename         = data.archive_file.events_zip.output_path
-  function_name    = "eventflow-${local.environment}-events"
+  function_name    = "kaluna-${local.environment}-events"
   role             = module.events_iam.role_arn
   handler          = "app.lambda_handler"
   runtime          = "python3.11"
@@ -101,7 +101,7 @@ resource "aws_lambda_permission" "events_api_gw" {
 
 module "registrations_iam" {
   source             = "../../modules/iam"
-  role_name          = "eventflow-${local.environment}-registrations-role"
+  role_name          = "kaluna-${local.environment}-registrations-role"
   environment        = local.environment
   dynamodb_table_arn = module.dynamodb.table_arn
   enable_ses_send    = true
@@ -115,7 +115,7 @@ data "archive_file" "registrations_zip" {
 
 resource "aws_lambda_function" "registrations" {
   filename         = data.archive_file.registrations_zip.output_path
-  function_name    = "eventflow-${local.environment}-registrations"
+  function_name    = "kaluna-${local.environment}-registrations"
   role             = module.registrations_iam.role_arn
   handler          = "app.lambda_handler"
   runtime          = "python3.11"
@@ -167,7 +167,7 @@ resource "aws_lambda_permission" "registrations_api_gw" {
 
 module "checkin_iam" {
   source             = "../../modules/iam"
-  role_name          = "eventflow-${local.environment}-checkin-role"
+  role_name          = "kaluna-${local.environment}-checkin-role"
   environment        = local.environment
   dynamodb_table_arn = module.dynamodb.table_arn
 }
@@ -194,7 +194,7 @@ data "archive_file" "checkin_zip" {
 
 resource "aws_lambda_function" "checkin" {
   filename         = data.archive_file.checkin_zip.output_path
-  function_name    = "eventflow-${local.environment}-checkin"
+  function_name    = "kaluna-${local.environment}-checkin"
   role             = module.checkin_iam.role_arn
   handler          = "bootstrap"
   runtime          = "provided.al2023"

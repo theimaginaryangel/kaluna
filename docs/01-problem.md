@@ -8,4 +8,4 @@ Event registration via Microsoft Forms + Excel breaks down past a handful of att
 - No audit trail — no record of who changed what, or when
 - No live visibility — organizers don't know registration numbers without opening the sheet
 
-EventFlow replaces this with a serverless REST API and admin dashboard: real-time capacity tracking, QR-based check-in, and a full audit log, running on AWS at near-zero cost for this scale of usage.
+Kaluna replaces this with a serverless REST API and admin dashboard: real-time capacity tracking, QR-based check-in, and a full audit log, running on AWS at near-zero cost for this scale of usage.

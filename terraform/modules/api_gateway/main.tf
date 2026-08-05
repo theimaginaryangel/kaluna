@@ -10,7 +10,7 @@ resource "aws_apigatewayv2_api" "http_api" {
 
   tags = {
     Environment = var.environment
-    Project     = "EventFlow"
+    Project     = "Kaluna"
   }
 }
 

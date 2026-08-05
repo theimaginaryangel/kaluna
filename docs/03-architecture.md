@@ -56,7 +56,7 @@ Amazon SES   CloudWatch Logs/Alarms + X-Ray
 
 ## Environments
 
-`dev` → `staging` → `prod`, each a separate Terraform state, same modules with environment-scoped variables (`eventflow-dev-*`, `eventflow-staging-*`, `eventflow-prod-*`). `develop` branch auto-deploys to dev; `main` deploys to prod on merge.
+`dev` → `staging` → `prod`, each a separate Terraform state, same modules with environment-scoped variables (`kaluna-dev-*`, `kaluna-staging-*`, `kaluna-prod-*`). `develop` branch auto-deploys to dev; `main` deploys to prod on merge.
 
 ## v2 (post-MVP)
 

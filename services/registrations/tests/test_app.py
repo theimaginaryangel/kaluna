@@ -20,7 +20,7 @@ def dynamodb_client(aws_credentials):
 
 @pytest.fixture
 def table_name():
-    return "eventflow-dev-table"
+    return "kaluna-dev-table"
 
 @pytest.fixture
 def setup_table(dynamodb_client, table_name):

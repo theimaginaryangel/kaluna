@@ -1,6 +1,6 @@
 # Database Design
 
-Single DynamoDB table: `EventFlowTable`. One system, one set of access patterns.
+Single DynamoDB table: `KalunaTable`. One system, one set of access patterns.
 
 ## Entities
 

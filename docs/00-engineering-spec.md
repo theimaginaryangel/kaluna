@@ -1,6 +1,6 @@
-# EventFlow — Engineering Specification
+# Kaluna — Engineering Specification
 
-This is the rulebook. Every Lambda, every Terraform module, every commit follows this, regardless of which session or which AI wrote it. When prompting Antigravity or any AI assistant for code, start the prompt with: "Follow the EventFlow Engineering Specification (docs/00-engineering-spec.md)."
+This is the rulebook. Every Lambda, every Terraform module, every commit follows this, regardless of which session or which AI wrote it. When prompting Antigravity or any AI assistant for code, start the prompt with: "Follow the Kaluna Engineering Specification (docs/00-engineering-spec.md)."
 
 ## API conventions
 
@@ -24,7 +24,7 @@ Structured JSON only, never plain strings. Minimum fields on every log line:
 
 - Python: `snake_case` for files/functions, PEP 8, type hints required on all function signatures
 - Go: standard `gofmt`, package per responsibility (`checkin`, `validation`, `storage`)
-- Terraform resources: `eventflow-{env}-{resource}` (e.g. `eventflow-dev-events-table`)
+- Terraform resources: `kaluna-{env}-{resource}` (e.g. `kaluna-dev-events-table`)
 - DynamoDB attributes: `camelCase`
 
 ## Commit conventions

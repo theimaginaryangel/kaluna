@@ -1,5 +1,5 @@
 variable "table_name" {
-  description = "The name of the DynamoDB table (e.g. eventflow-dev-table)"
+  description = "The name of the DynamoDB table (e.g. kaluna-dev-table)"
   type        = string
 }
 
