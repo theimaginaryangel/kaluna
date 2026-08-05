@@ -78,7 +78,12 @@ jobs:
           else
             echo "environment=dev" >> $GITHUB_OUTPUT
           fi
-      
+          
+      - name: Build Check-in binary
+        run: |
+          cd services/checkin
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bootstrap main.go
+          
       - name: Terraform Init
         run: terraform init
         working-directory: terraform/environments/${{ steps.env.outputs.environment }}
