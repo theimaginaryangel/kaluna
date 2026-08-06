@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: var(--font-open-sans), 'Open Sans', system-ui, sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-montserrat), 'Montserrat', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  /* Strict Interactive Pink Utilities */
+  .ring-pink-focus {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF2D87] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#090A0F];
+  }
+
+  .hover-pink-border {
+    @apply transition-colors duration-200 hover:border-[#FF2D87];
+  }
+
+  .hover-pink-text {
+    @apply transition-colors duration-200 hover:text-[#FF2D87];
+  }
+
+  .hover-pink-glow {
+    @apply transition-shadow duration-300 hover:shadow-[0_0_20px_rgba(255,45,135,0.4)];
+  }
+
+  .active-pink-bg {
+    @apply active:bg-[#FF2D87] active:text-white;
+  }
+
+  /* Apple/Google Minimal Soft Shadows */
+  .shadow-soft {
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 0 3px rgba(0,0,0,0.02);
+  }
+  
+  .dark .shadow-soft {
+    box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.5), 0 0 3px rgba(255,255,255,0.02);
+  }
+
+  /* Hot Pink Loading Skeleton Utility */
+  .skeleton-shimmer-pink {
+    @apply relative overflow-hidden bg-slate-200 dark:bg-slate-800/80 rounded-md;
+  }
+
+  .skeleton-shimmer-pink::after {
+    content: '';
+    @apply absolute inset-0 -translate-x-full animate-shimmer;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 45, 135, 0.05) 20%,
+      rgba(255, 45, 135, 0.25) 50%,
+      rgba(255, 45, 135, 0.05) 80%,
+      transparent 100%
+    );
+  }
+}
+
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+  
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+
+  .print\:border-black {
+    border-color: black !important;
+  }
+
+  .print\:text-black {
+    color: black !important;
+  }
+}

@@ -228,7 +228,7 @@ module "checkin_iam" {
 
 resource "null_resource" "build_checkin" {
   triggers = {
-    always_run = "${timestamp()}"
+    source_hash = filemd5("${path.module}/../../../services/checkin/main.go")
   }
   provisioner "local-exec" {
     command     = "go build -o bootstrap main.go"

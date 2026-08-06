@@ -50,6 +50,22 @@ def validate_event_input(body: dict, is_update: bool = False) -> str | None:
     
     return None
 
+def get_user_context(event: dict):
+    authorizer = event.get('requestContext', {}).get('authorizer', {})
+    claims = authorizer.get('jwt', {}).get('claims', {}) if 'jwt' in authorizer else authorizer.get('claims', {})
+    
+    groups = claims.get('cognito:groups', [])
+    if isinstance(groups, str):
+        groups = groups.replace('[', '').replace(']', '').split(',')
+    
+    user_groups = [g.strip() for g in groups if g.strip()] if groups else []
+    
+    return {
+        'caller_id': claims.get('sub', 'unknown'),
+        'is_admin': 'Admin' in user_groups,
+        'is_creator': 'Creator' in user_groups
+    }
+
 def lambda_handler(event: dict, context) -> dict:
     start_time = time.time()
     request_id = event.get('requestContext', {}).get('requestId', 'unknown-request')
@@ -71,6 +87,8 @@ def lambda_handler(event: dict, context) -> dict:
     
     action = f"{http_method} {path}"
     
+    ctx = get_user_context(event)
+    
     try:
         if path == '/api/v1/health' and http_method == 'GET':
             import datetime as dt
@@ -83,7 +101,7 @@ def lambda_handler(event: dict, context) -> dict:
             return build_response(200, health)
             
         elif path == '/api/v1/events' and http_method == 'GET':
-            response = list_events(event)
+            response = list_events(event, ctx)
             log_event(request_id, "N/A", "list_events", start_time, "success")
             return response
             
@@ -93,8 +111,10 @@ def lambda_handler(event: dict, context) -> dict:
             return response
             
         elif path == '/api/v1/events' and http_method == 'POST':
+            if not ctx['is_admin'] and not ctx['is_creator']:
+                return build_response(403, format_error("Forbidden: Need Creator or Admin role", "FORBIDDEN"))
             body = json.loads(event.get('body', '{}'))
-            response, new_event_id = create_event(body)
+            response, new_event_id = create_event(body, ctx)
             log_event(request_id, new_event_id, "create_event", start_time, "success")
             return response
             
@@ -112,12 +132,12 @@ def lambda_handler(event: dict, context) -> dict:
                 
             elif http_method == 'PUT':
                 body = json.loads(event.get('body', '{}'))
-                response = update_event(event_id, body)
+                response = update_event(event_id, body, ctx)
                 log_event(request_id, event_id, "update_event", start_time, "success")
                 return response
                 
             elif http_method == 'DELETE':
-                response = delete_event(event_id)
+                response = delete_event(event_id, ctx)
                 log_event(request_id, event_id, "delete_event", start_time, "success")
                 return response
                 
@@ -130,7 +150,7 @@ def lambda_handler(event: dict, context) -> dict:
         return build_response(500, format_error("Internal server error", "INTERNAL_ERROR"))
 
 
-def list_events(event: dict) -> dict:
+def list_events(event: dict, ctx: dict) -> dict:
     query_params = event.get('queryStringParameters') or {}
     status_filter = query_params.get('status')
     limit = min(int(query_params.get('limit', '20')), 100)
@@ -139,6 +159,9 @@ def list_events(event: dict) -> dict:
     filter_expr = Attr('SK').eq('METADATA')
     if status_filter:
         filter_expr &= Attr('status').eq(status_filter)
+        
+    if not ctx['is_admin'] and ctx['is_creator']:
+        filter_expr &= Attr('ownerId').eq(ctx['caller_id'])
         
     scan_kwargs = {
         'FilterExpression': filter_expr,
@@ -178,7 +201,7 @@ def list_events(event: dict) -> dict:
     return build_response(200, result)
 
 
-def create_event(body: dict) -> tuple[dict, str]:
+def create_event(body: dict, ctx: dict) -> tuple[dict, str]:
     error = validate_event_input(body)
     if error:
         return build_response(400, format_error(error, 'BAD_REQUEST')), 'N/A'
@@ -191,6 +214,7 @@ def create_event(body: dict) -> tuple[dict, str]:
         'PK': f"EVENT#{event_id}",
         'SK': "METADATA",
         'eventId': event_id,
+        'ownerId': ctx['caller_id'],
         'name': body['name'],
         'date': body['date'],
         'venue': body['venue'],
@@ -245,7 +269,7 @@ def get_event(event_id: str) -> dict:
     return build_response(200, clean_item(item))
 
 
-def update_event(event_id: str, body: dict) -> dict:
+def update_event(event_id: str, body: dict, ctx: dict) -> dict:
     error = validate_event_input(body, is_update=True)
     if error:
         return build_response(400, format_error(error, 'BAD_REQUEST'))
@@ -255,6 +279,10 @@ def update_event(event_id: str, body: dict) -> dict:
     if 'Item' not in get_res:
         return build_response(404, format_error("Event not found", "NOT_FOUND"))
         
+    old_item = get_res['Item']
+    if not ctx['is_admin'] and old_item.get('ownerId') != ctx['caller_id']:
+        return build_response(403, format_error("Forbidden", "FORBIDDEN"))
+        
     update_expr = "SET "
     expr_attr_values = {}
     expr_attr_names = {}
@@ -262,7 +290,6 @@ def update_event(event_id: str, body: dict) -> dict:
     updatable_fields = ['name', 'date', 'venue', 'capacity', 'waitlistEnabled']
     
     if 'capacity' in body:
-        old_item = get_res['Item']
         old_cap = int(old_item.get('capacity', 0))
         old_rem = int(old_item.get('seatsRemaining', 0))
         taken = old_cap - old_rem
@@ -324,7 +351,14 @@ def update_event(event_id: str, body: dict) -> dict:
     return build_response(200, clean_item(updated_item))
 
 
-def delete_event(event_id: str) -> dict:
+def delete_event(event_id: str, ctx: dict) -> dict:
+    get_res = table.get_item(Key={'PK': f"EVENT#{event_id}", 'SK': "METADATA"})
+    if 'Item' not in get_res:
+        return build_response(404, format_error("Event not found", "NOT_FOUND"))
+        
+    if not ctx['is_admin'] and get_res['Item'].get('ownerId') != ctx['caller_id']:
+        return build_response(403, format_error("Forbidden", "FORBIDDEN"))
+
     now = datetime.utcnow().isoformat() + 'Z'
     audit_item = {
         'PK': f"EVENT#{event_id}",

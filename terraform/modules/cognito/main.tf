@@ -32,3 +32,15 @@ resource "aws_cognito_user_pool_client" "client" {
     "ALLOW_REFRESH_TOKEN_AUTH"
   ]
 }
+
+resource "aws_cognito_user_group" "admin" {
+  name         = "Admin"
+  user_pool_id = aws_cognito_user_pool.pool.id
+  description  = "Admin group"
+}
+
+resource "aws_cognito_user_group" "creator" {
+  name         = "Creator"
+  user_pool_id = aws_cognito_user_pool.pool.id
+  description  = "Creator group"
+}

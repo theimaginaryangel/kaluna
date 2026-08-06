@@ -31,6 +31,18 @@ resource "aws_dynamodb_table" "kaluna_table" {
     projection_type = "ALL"
   }
 
+  attribute {
+    name = "ownerId"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "OwnerIndex"
+    hash_key        = "ownerId"
+    range_key       = "PK"
+    projection_type = "ALL"
+  }
+
   tags = {
     Environment = var.environment
     Project     = "Kaluna"

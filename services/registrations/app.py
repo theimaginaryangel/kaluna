@@ -8,6 +8,9 @@ import boto3
 from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 from utils import format_error, build_response, log_event
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
 
 EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 
@@ -16,6 +19,95 @@ ses = boto3.client('ses', region_name=os.environ.get('AWS_DEFAULT_REGION', 'us-e
 table_name = os.environ.get('TABLE_NAME', 'kaluna-dev-table')
 sender_email = os.environ.get('SENDER_EMAIL', 'contact@bennyduah.com')
 table = dynamodb.Table(table_name)
+
+def generate_ics(event_item: dict, ticket_id: str) -> str:
+    event_name = event_item.get('name', 'Event')
+    event_date = event_item.get('date', '') # YYYY-MM-DD
+    venue = event_item.get('venue', '')
+    
+    date_str = event_date.replace('-', '') if event_date else ''
+    
+    ics = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Kaluna//Event Registration//EN",
+        "BEGIN:VEVENT",
+        f"UID:{ticket_id}@kaluna",
+        f"DTSTAMP:{datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}",
+    ]
+    if date_str:
+        ics.append(f"DTSTART;VALUE=DATE:{date_str}")
+    ics.extend([
+        f"SUMMARY:{event_name}",
+        f"LOCATION:{venue}",
+        "END:VEVENT",
+        "END:VCALENDAR"
+    ])
+    return "\r\n".join(ics)
+
+def send_ticket_email(email_addr: str, name: str, ticket_id: str, event_item: dict, status: str):
+    msg = MIMEMultipart('mixed')
+    msg['From'] = sender_email
+    msg['To'] = email_addr
+    
+    qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={ticket_id}"
+    
+    if status == 'waitlisted':
+        msg['Subject'] = 'You are on the event waitlist'
+        html_body = f"""
+        <html>
+        <body>
+            <h1>You are on the waitlist!</h1>
+            <p>Hi {name},</p>
+            <p>The event is currently full, but you have been added to the waitlist.</p>
+            <p>We will notify you if a spot opens up.</p>
+        </body>
+        </html>
+        """
+    elif status == 'promoted':
+        msg['Subject'] = 'You are off the waitlist! Here is your ticket'
+        html_body = f"""
+        <html>
+        <body>
+            <h1>You're off the waitlist!</h1>
+            <p>Hi {name},</p>
+            <p>A spot opened up and you have successfully been registered for the event.</p>
+            <p>Your Ticket ID is: <strong>{ticket_id}</strong></p>
+            <p>Please present the QR code below at check-in:</p>
+            <img src="{qr_url}" alt="Ticket QR Code" />
+        </body>
+        </html>
+        """
+    else:
+        msg['Subject'] = 'Your Event Registration Ticket'
+        html_body = f"""
+        <html>
+        <body>
+            <h1>Registration Confirmed!</h1>
+            <p>Hi {name},</p>
+            <p>You have successfully registered for the event.</p>
+            <p>Your Ticket ID is: <strong>{ticket_id}</strong></p>
+            <p>Please present the QR code below at check-in:</p>
+            <img src="{qr_url}" alt="Ticket QR Code" />
+        </body>
+        </html>
+        """
+        
+    msg_body = MIMEMultipart('alternative')
+    msg_body.attach(MIMEText(html_body, 'html'))
+    msg.attach(msg_body)
+    
+    if status in ['registered', 'promoted']:
+        ics_data = generate_ics(event_item, ticket_id)
+        att = MIMEApplication(ics_data.encode('utf-8'), _subtype='calendar')
+        att.add_header('Content-Disposition', 'attachment', filename='event.ics')
+        msg.attach(att)
+        
+    ses.send_raw_email(
+        Source=sender_email,
+        Destinations=[email_addr],
+        RawMessage={'Data': msg.as_string()}
+    )
 
 def lambda_handler(event: dict, context) -> dict:
     start_time = time.time()
@@ -186,43 +278,7 @@ def register(event_id: str, body: dict) -> dict:
         
     # Send SES Email asynchronously (best effort in this handler)
     try:
-        qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={ticket_id}"
-        
-        if reg_item['status'] == 'waitlisted':
-            html_body = f"""
-            <html>
-            <body>
-                <h1>You are on the waitlist!</h1>
-                <p>Hi {name},</p>
-                <p>The event is currently full, but you have been added to the waitlist.</p>
-                <p>We will notify you if a spot opens up.</p>
-            </body>
-            </html>
-            """
-            subject = 'You are on the event waitlist'
-        else:
-            html_body = f"""
-            <html>
-            <body>
-                <h1>Registration Confirmed!</h1>
-                <p>Hi {name},</p>
-                <p>You have successfully registered for the event.</p>
-                <p>Your Ticket ID is: <strong>{ticket_id}</strong></p>
-                <p>Please present the QR code below at check-in:</p>
-                <img src="{qr_url}" alt="Ticket QR Code" />
-            </body>
-            </html>
-            """
-            subject = 'Your Event Registration Ticket'
-        
-        ses.send_email(
-            Source=sender_email,
-            Destination={'ToAddresses': [email]},
-            Message={
-                'Subject': {'Data': subject},
-                'Body': {'Html': {'Data': html_body}}
-            }
-        )
+        send_ticket_email(email, name, ticket_id, event_item, reg_item['status'])
     except Exception as e:
         print(f"Failed to send email: {e}") # Log it, but don't fail the registration
         
@@ -373,27 +429,8 @@ def cancel_registration(ticket_id: str) -> dict:
                 )
                 
                 # Send email to promoted user
-                qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={promoted_ticket_id}"
-                html_body = f"""
-                <html>
-                <body>
-                    <h1>You're off the waitlist!</h1>
-                    <p>Hi {promoted_user.get('name', 'there')},</p>
-                    <p>A spot opened up and you have successfully been registered for the event.</p>
-                    <p>Your Ticket ID is: <strong>{promoted_ticket_id}</strong></p>
-                    <p>Please present the QR code below at check-in:</p>
-                    <img src="{qr_url}" alt="Ticket QR Code" />
-                </body>
-                </html>
-                """
-                ses.send_email(
-                    Source=sender_email,
-                    Destination={'ToAddresses': [promoted_user['email']]},
-                    Message={
-                        'Subject': {'Data': 'You are off the waitlist! Here is your ticket'},
-                        'Body': {'Html': {'Data': html_body}}
-                    }
-                )
+                event_item = table.get_item(Key={'PK': f"EVENT#{event_id}", 'SK': "METADATA"}).get('Item', {})
+                send_ticket_email(promoted_user['email'], promoted_user.get('name', 'there'), promoted_ticket_id, event_item, 'promoted')
                 
         except Exception as e:
             print(f"Failed to promote waitlisted user: {e}")
