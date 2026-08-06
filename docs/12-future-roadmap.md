@@ -12,3 +12,6 @@ Cut from v1 deliberately, to keep the build shippable. Candidates for future rel
 - **Waitlist** — auto-promote when a cancellation frees a seat
 - **Event reminders** — EventBridge Scheduler + SES, 24h before an event
 - **Post-event feedback** — automated survey email after check-in
+- **ICS Calendar Invites** — MIME multipart email with RFC 5545 `.ics` file attachment
+- **Social Proof Avatars** — DiceBear SVG avatar stack on event cards
+- **Cognito RBAC** — Creator vs Godmode Admin role-based authorization split

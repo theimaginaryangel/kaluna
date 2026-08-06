@@ -34,21 +34,22 @@ Start here: [`docs/00-engineering-spec.md`](docs/00-engineering-spec.md)
 | [10-cost-analysis.md](docs/10-cost-analysis.md) | AWS cost breakdown |
 | [11-decisions.md](docs/11-decisions.md) | ADR index |
 | [12-future-roadmap.md](docs/12-future-roadmap.md) | What's deliberately out of v1 |
+| [13-final-status-report.md](docs/13-final-status-report.md) | Complete engineering report & Q&A presentation guide |
 
 ## Repository structure
 
 ```
 terraform/       Infrastructure as code (modules + dev/staging/prod)
 services/         Lambda source — events, registrations (Python), checkin (Go)
-frontend/         Antigravity-built static frontend
-docs/             Engineering spec, architecture, ADRs
+frontend/         Next.js App Router editorial frontend (static export)
+docs/             Engineering spec, architecture, final report, ADRs
 openapi.yaml      API contract
 .github/workflows CI/CD pipeline
 ```
 
 ## Status
 
-Backend build (Phases 1-6) is fully complete. The system is ready to be deployed. The frontend implementation is currently pending.
+Backend API, Terraform IaC, Next.js Frontend, Automated Waitlists, ICS Calendar Invites, Social Proof Avatars, and Cognito RBAC are **100% complete, fully tested, and committed to main**.
 
 ## Quick Start (Deployment)
 
