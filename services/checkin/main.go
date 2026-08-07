@@ -278,6 +278,37 @@ func callerClaims(req events.APIGatewayV2HTTPRequest) map[string]string {
 	return req.RequestContext.Authorizer.JWT.Claims
 }
 
+func creatorEmail(req events.APIGatewayV2HTTPRequest) string {
+	for k, v := range req.Headers {
+		if strings.EqualFold(k, "X-Creator-Email") {
+			return strings.ToLower(strings.TrimSpace(v))
+		}
+	}
+	return ""
+}
+
+func eventOwnerID(ctx context.Context, eventID string) string {
+	if eventID == "" {
+		return ""
+	}
+	out, err := dbClient.GetItem(ctx, &dynamodb.GetItemInput{
+		TableName: &tableName,
+		Key: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{Value: "EVENT#" + eventID},
+			"SK": &types.AttributeValueMemberS{Value: "METADATA"},
+		},
+	})
+	if err != nil || out.Item == nil {
+		return ""
+	}
+	var evt map[string]interface{}
+	if err := attributevalue.UnmarshalMap(out.Item, &evt); err != nil {
+		return ""
+	}
+	owner, _ := evt["ownerId"].(string)
+	return owner
+}
+
 func isAdminOrOwner(ctx context.Context, req events.APIGatewayV2HTTPRequest, eventID string) bool {
 	claims := callerClaims(req)
 
@@ -291,31 +322,21 @@ func isAdminOrOwner(ctx context.Context, req events.APIGatewayV2HTTPRequest, eve
 		}
 	}
 
+	owner := eventOwnerID(ctx, eventID)
+	if owner == "" {
+		return false
+	}
+
+	// Email-based creator identity (password-less)
+	if email := creatorEmail(req); email != "" {
+		return owner == email
+	}
+
 	sub := ""
 	if claims != nil {
 		sub = claims["sub"]
 	}
-	if sub == "" || eventID == "" {
-		return false
-	}
-
-	out, err := dbClient.GetItem(ctx, &dynamodb.GetItemInput{
-		TableName: &tableName,
-		Key: map[string]types.AttributeValue{
-			"PK": &types.AttributeValueMemberS{Value: "EVENT#" + eventID},
-			"SK": &types.AttributeValueMemberS{Value: "METADATA"},
-		},
-	})
-	if err != nil || out.Item == nil {
-		return false
-	}
-
-	var evt map[string]interface{}
-	if err := attributevalue.UnmarshalMap(out.Item, &evt); err != nil {
-		return false
-	}
-	owner, _ := evt["ownerId"].(string)
-	return owner != "" && owner == sub
+	return owner == sub
 }
 
 func main() {

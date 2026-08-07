@@ -201,6 +201,37 @@ function getAuthHeader(): Record<string, string> {
   return { Authorization: `Bearer ${token}` };
 }
 
+export function getCreatorEmail(): string {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+  return (window.localStorage.getItem('kaluna_creator_email') || '').trim();
+}
+
+export function setCreatorEmail(email: string): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  window.localStorage.setItem('kaluna_creator_email', email.trim().toLowerCase());
+  window.localStorage.removeItem('kaluna_jwt_token');
+  window.localStorage.removeItem('kaluna_admin_user');
+}
+
+export function clearCreatorIdentity(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  window.localStorage.removeItem('kaluna_creator_email');
+}
+
+export function isCreatorMode(): boolean {
+  return getCreatorEmail() !== '';
+}
+
+function creatorScopedEventsPath(suffix: string): string {
+  return isCreatorMode() ? `/api/v1/creator/events${suffix}` : `/api/v1/events${suffix}`;
+}
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const baseUrl = getApiUrl();
   if (!baseUrl) {
@@ -215,6 +246,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const authHeader = getAuthHeader();
   if (!headers.has('Authorization') && authHeader.Authorization) {
     headers.set('Authorization', authHeader.Authorization);
+  }
+
+  // Password-less creator identity: attach email to creator-scoped endpoints.
+  const creatorEmail = getCreatorEmail();
+  if (creatorEmail && endpoint.includes('/api/v1/creator/')) {
+    headers.set('X-Creator-Email', creatorEmail);
   }
 
   const response = await fetch(new URL(endpoint, baseUrl).toString(), {
@@ -264,7 +301,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 export const api = {
   /**
-   * Fetch events list with optional category filter, search query, or featured flag.
+   * Fetch events list. In creator mode, returns only the creator's own events.
    */
   async getEvents(params?: {
     category?: EventCategory | 'All';
@@ -284,7 +321,7 @@ export const api = {
       }
 
       const queryString = searchParams.toString();
-      const endpoint = `/api/v1/events${queryString ? `?${queryString}` : ''}`;
+      const endpoint = `${creatorScopedEventsPath('')}${queryString ? `?${queryString}` : ''}`;
       const payload = await request<unknown>(endpoint);
       const rawEvents = unwrapListResponse<unknown[]>(payload);
 
@@ -325,7 +362,7 @@ export const api = {
    */
   async getEventById(id: string): Promise<Event> {
     try {
-      const payload = await request<unknown>(`/api/v1/events/${id}`);
+      const payload = await request<unknown>(creatorScopedEventsPath(`/${id}`));
       return normalizeEvent(payload as Record<string, unknown>);
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
@@ -456,7 +493,7 @@ export const api = {
    */
   async getAdminStats(): Promise<AdminStats> {
     try {
-      const payload = await request<unknown>('/api/v1/analytics');
+      const payload = await request<unknown>(isCreatorMode() ? '/api/v1/creator/analytics' : '/api/v1/analytics');
       return normalizeAdminStats(payload as Record<string, unknown>);
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
@@ -527,7 +564,7 @@ export const api = {
     const payload = buildEventApiPayload(eventData);
 
     try {
-      const created = await request<unknown>('/api/v1/events', {
+      const created = await request<unknown>(creatorScopedEventsPath(''), {
         method: 'POST',
         body: JSON.stringify(payload),
       });
@@ -549,7 +586,7 @@ export const api = {
     const payload = buildEventApiPayload(eventData);
 
     try {
-      const updated = await request<unknown>(`/api/v1/events/${id}`, {
+      const updated = await request<unknown>(creatorScopedEventsPath(`/${id}`), {
         method: 'PUT',
         body: JSON.stringify(payload),
       });
@@ -569,7 +606,7 @@ export const api = {
    */
   async deleteEvent(id: string): Promise<void> {
     try {
-      await request<unknown>(`/api/v1/events/${id}`, { method: 'DELETE' });
+      await request<unknown>(creatorScopedEventsPath(`/${id}`), { method: 'DELETE' });
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
       throw new KalunaApiError(
@@ -585,7 +622,7 @@ export const api = {
    */
   async getCheckIns(eventId: string): Promise<{ checkedIn: number; total: number; attendees: Registration[] }> {
     const payload = await request<{ checkedIn: number; total: number; attendees: unknown[] }>(
-      `/api/v1/events/${encodeURIComponent(eventId)}/check-ins`
+      creatorScopedEventsPath(`/${encodeURIComponent(eventId)}/check-ins`)
     );
     return {
       checkedIn: payload.checkedIn,
@@ -603,7 +640,7 @@ export const api = {
     }
 
     try {
-      const payload = await request<unknown>(`/api/v1/events/${encodeURIComponent(eventId)}/registrations`);
+      const payload = await request<unknown>(creatorScopedEventsPath(`/${encodeURIComponent(eventId)}/registrations`));
       const registrations = unwrapListResponse<unknown[]>(payload);
       return (Array.isArray(registrations) ? registrations : []).map((entry) => normalizeRegistration(entry as Record<string, unknown>));
     } catch (err) {

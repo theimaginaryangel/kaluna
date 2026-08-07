@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { AdminStats, Event, Registration } from '@/lib/types';
-import { api } from '@/lib/api';
+import { api, isCreatorMode, getCreatorEmail, clearCreatorIdentity } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge, CategoryBadge } from '@/components/ui/badge';
@@ -22,6 +22,7 @@ import {
   LogOut,
   RefreshCw,
   Trash2,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -58,6 +59,8 @@ export default function AdminDashboardPage() {
   const [callerSub, setCallerSub] = React.useState('');
 
   const isAdmin = userGroups.includes('Admin');
+  const creatorMode = isCreatorMode();
+  const creatorEmail = getCreatorEmail();
 
   const loadDashboardData = React.useCallback(async () => {
     setIsLoading(true);
@@ -91,11 +94,11 @@ export default function AdminDashboardPage() {
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('kaluna_jwt_token');
-      if (!token) {
-        router.push('/admin/login');
+      if (!token && !isCreatorMode()) {
+        router.push('/admin');
         return;
       }
-      const payload = decodeJwtPayload(token);
+      const payload = token ? decodeJwtPayload(token) : null;
       const groupsRaw = (payload?.['cognito:groups'] as string) || '';
       const groups = groupsRaw
         .replace(/[\[\]]/g, '')
@@ -112,6 +115,11 @@ export default function AdminDashboardPage() {
   }, [loadDashboardData, router]);
 
   const handleLogout = () => {
+    if (isCreatorMode()) {
+      clearCreatorIdentity();
+      router.push('/admin');
+      return;
+    }
     if (typeof window !== 'undefined') {
       localStorage.removeItem('kaluna_jwt_token');
       localStorage.removeItem('kaluna_admin_user');
@@ -169,12 +177,16 @@ export default function AdminDashboardPage() {
     if (activeTab === 'all-events') {
       return events;
     }
+    // Creator mode — the API already scopes the list to the creator's email.
+    if (creatorMode) {
+      return events;
+    }
     // Creator view — only events this user owns
     if (callerSub) {
       return events.filter((e) => e.ownerId === callerSub);
     }
     return events.slice(0, Math.max(1, Math.floor(events.length / 2)));
-  }, [events, activeTab, callerSub]);
+  }, [events, activeTab, callerSub, creatorMode]);
 
   const tabStats = React.useMemo(() => {
     if (activeTab === 'all-events') {
@@ -207,15 +219,27 @@ export default function AdminDashboardPage() {
         {/* Top Header & Quick Action Toolbar */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+            <div className="flex items-center gap-2 flex-wrap">
+              {creatorMode ? (
+                <Sparkles className="w-5 h-5 text-[#FF2D87]" />
+              ) : (
+                <ShieldCheck className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+              )}
               <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                Admin Management Console
+                {creatorMode ? 'Creator Management Console' : 'Admin Management Console'}
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-              Real-time check-in stream, capacity utilization analytics, and event controls
+              {creatorMode
+                ? 'Real-time check-in stream, capacity analytics, and controls for your events'
+                : 'Real-time check-in stream, capacity utilization analytics, and event controls'}
             </p>
+            {creatorMode && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                <Sparkles className="w-3 h-3 text-[#FF2D87]" />
+                {creatorEmail}
+              </span>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-3">

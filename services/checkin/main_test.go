@@ -346,3 +346,134 @@ func TestSafeTypeAssertions(t *testing.T) {
 		t.Errorf("expected 500 for invalid item type assertion, got %d", resp.StatusCode)
 	}
 }
+
+func TestCreatorEmailHeaderParsing(t *testing.T) {
+	req := events.APIGatewayV2HTTPRequest{
+		Headers: map[string]string{"x-creator-email": "  Creator@Example.com "},
+	}
+	if got := creatorEmail(req); got != "creator@example.com" {
+		t.Errorf("expected normalized creator email, got %q", got)
+	}
+
+	empty := events.APIGatewayV2HTTPRequest{Headers: map[string]string{"Content-Type": "application/json"}}
+	if got := creatorEmail(empty); got != "" {
+		t.Errorf("expected empty creator email, got %q", got)
+	}
+}
+
+func TestCreatorGetCheckinsOwnEvent(t *testing.T) {
+	oldClient := dbClient
+	defer func() { dbClient = oldClient }()
+
+	dbClient = &mockDynamoDBClient{
+		getItemFn: func(ctx context.Context, params *dynamodb.GetItemInput, optFns ...func(*dynamodb.Options)) (*dynamodb.GetItemOutput, error) {
+			return &dynamodb.GetItemOutput{
+				Item: map[string]types.AttributeValue{
+					"PK":      &types.AttributeValueMemberS{Value: "EVENT#evt1"},
+					"SK":      &types.AttributeValueMemberS{Value: "METADATA"},
+					"ownerId": &types.AttributeValueMemberS{Value: "creator@example.com"},
+				},
+			}, nil
+		},
+		queryFn: func(ctx context.Context, params *dynamodb.QueryInput, optFns ...func(*dynamodb.Options)) (*dynamodb.QueryOutput, error) {
+			item := map[string]types.AttributeValue{
+				"PK":     &types.AttributeValueMemberS{Value: "EVENT#evt1"},
+				"SK":     &types.AttributeValueMemberS{Value: "REG#user@example.com"},
+				"email":  &types.AttributeValueMemberS{Value: "user@example.com"},
+				"status": &types.AttributeValueMemberS{Value: "checked_in"},
+			}
+			return &dynamodb.QueryOutput{Items: []map[string]types.AttributeValue{item}}, nil
+		},
+	}
+
+	req := events.APIGatewayV2HTTPRequest{
+		RequestContext: events.APIGatewayV2HTTPRequestContext{
+			HTTP: events.APIGatewayV2HTTPRequestContextHTTPDescription{
+				Method: "GET",
+				Path:   "/api/v1/creator/events/evt1/check-ins",
+			},
+		},
+		Headers:        map[string]string{"X-Creator-Email": "creator@example.com"},
+		PathParameters: map[string]string{"eventId": "evt1"},
+	}
+
+	resp, err := handler(context.Background(), req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.StatusCode != 200 {
+		t.Errorf("expected 200 for owner email, got %d", resp.StatusCode)
+	}
+
+	var checkinResp CheckinResponse
+	json.Unmarshal([]byte(resp.Body), &checkinResp)
+	if checkinResp.Total != 1 {
+		t.Errorf("expected 1 total, got %d", checkinResp.Total)
+	}
+}
+
+func TestCreatorGetCheckinsForbiddenForOtherOwner(t *testing.T) {
+	oldClient := dbClient
+	defer func() { dbClient = oldClient }()
+
+	dbClient = &mockDynamoDBClient{
+		getItemFn: func(ctx context.Context, params *dynamodb.GetItemInput, optFns ...func(*dynamodb.Options)) (*dynamodb.GetItemOutput, error) {
+			return &dynamodb.GetItemOutput{
+				Item: map[string]types.AttributeValue{
+					"PK":      &types.AttributeValueMemberS{Value: "EVENT#evt1"},
+					"SK":      &types.AttributeValueMemberS{Value: "METADATA"},
+					"ownerId": &types.AttributeValueMemberS{Value: "someone-else@example.com"},
+				},
+			}, nil
+		},
+	}
+
+	req := events.APIGatewayV2HTTPRequest{
+		RequestContext: events.APIGatewayV2HTTPRequestContext{
+			HTTP: events.APIGatewayV2HTTPRequestContextHTTPDescription{
+				Method: "GET",
+				Path:   "/api/v1/creator/events/evt1/check-ins",
+			},
+		},
+		Headers:        map[string]string{"X-Creator-Email": "creator@example.com"},
+		PathParameters: map[string]string{"eventId": "evt1"},
+	}
+
+	resp, err := handler(context.Background(), req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.StatusCode != 403 {
+		t.Errorf("expected 403 for non-owner email, got %d", resp.StatusCode)
+	}
+}
+
+func TestCreatorGetCheckinsRequiresOwnerRecord(t *testing.T) {
+	oldClient := dbClient
+	defer func() { dbClient = oldClient }()
+
+	dbClient = &mockDynamoDBClient{
+		getItemFn: func(ctx context.Context, params *dynamodb.GetItemInput, optFns ...func(*dynamodb.Options)) (*dynamodb.GetItemOutput, error) {
+			return &dynamodb.GetItemOutput{Item: nil}, nil
+		},
+	}
+
+	req := events.APIGatewayV2HTTPRequest{
+		RequestContext: events.APIGatewayV2HTTPRequestContext{
+			HTTP: events.APIGatewayV2HTTPRequestContextHTTPDescription{
+				Method: "GET",
+				Path:   "/api/v1/creator/events/evt1/check-ins",
+			},
+		},
+		Headers:        map[string]string{"X-Creator-Email": "creator@example.com"},
+		PathParameters: map[string]string{"eventId": "evt1"},
+	}
+
+	resp, err := handler(context.Background(), req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.StatusCode != 403 {
+		t.Errorf("expected 403 when event metadata missing, got %d", resp.StatusCode)
+	}
+}

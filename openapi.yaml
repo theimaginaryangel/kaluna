@@ -244,12 +244,151 @@ paths:
                   attendanceRate: { type: number }
                   upcomingEvents: { type: integer }
 
+  /creator/events:
+    get:
+      summary: List the caller's own events (password-less creator)
+      tags: [Creator]
+      security: [{ CreatorEmail: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EventListFilters"
+      responses:
+        "200":
+          description: List of events owned by the creator email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items: { $ref: "#/components/schemas/Event" }
+                  nextCursor:
+                    type: string
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Create an event as the creator (password-less)
+      tags: [Creator]
+      security: [{ CreatorEmail: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EventInput" }
+      responses:
+        "201":
+          description: Event created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Event" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /creator/events/{eventId}:
+    put:
+      summary: Update the creator's own event
+      tags: [Creator]
+      security: [{ CreatorEmail: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EventInput" }
+      responses:
+        "200":
+          description: Event updated
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      summary: Delete the creator's own event
+      tags: [Creator]
+      security: [{ CreatorEmail: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "204": { description: Deleted }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /creator/events/{eventId}/registrations:
+    get:
+      summary: List registrations for the creator's own event (JSON or CSV)
+      tags: [Creator]
+      security: [{ CreatorEmail: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+      responses:
+        "200":
+          description: Registrations list or CSV export
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Registration" }
+            text/csv:
+              schema:
+                type: string
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /creator/events/{eventId}/check-ins:
+    get:
+      summary: Live check-in count and list for the creator's own event
+      tags: [Creator]
+      security: [{ CreatorEmail: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: Check-in status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checkedIn: { type: integer }
+                  total: { type: integer }
+                  attendees:
+                    type: array
+                    items: { $ref: "#/components/schemas/Registration" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /creator/analytics:
+    get:
+      summary: Analytics scoped to the creator's own events (password-less)
+      tags: [Creator]
+      security: [{ CreatorEmail: [] }]
+      responses:
+        "200":
+          description: Analytics summary for the creator's events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalEvents: { type: integer }
+                  totalRegistrations: { type: integer }
+                  attendanceRate: { type: number }
+                  upcomingEvents: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
 components:
   securitySchemes:
     CognitoAuth:
       type: apiKey
       in: header
       name: Authorization
+    CreatorEmail:
+      type: apiKey
+      in: header
+      name: X-Creator-Email
   parameters:
     EventId:
       name: eventId
@@ -261,9 +400,23 @@ components:
       in: path
       required: true
       schema: { type: string }
+    EventListFilters:
+      name: status
+      in: query
+      schema: { type: string, enum: [available, limited, sold_out] }
   responses:
     NotFound:
       description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Missing or invalid identity (creator email header or JWT)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: Identity does not own this event
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }

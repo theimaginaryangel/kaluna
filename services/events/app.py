@@ -69,10 +69,23 @@ def get_user_context(event: dict):
     
     user_groups = [g.strip() for g in groups if g.strip()] if groups else []
     
+    # Password-less creator identity: X-Creator-Email header (lowercased).
+    headers = {k.lower(): v for k, v in (event.get('headers') or {}).items()}
+    creator_email = (headers.get('x-creator-email') or '').strip().lower()
+    
+    if creator_email:
+        return {
+            'caller_id': creator_email,
+            'is_admin': False,
+            'is_creator': True,
+            'creator_email': creator_email
+        }
+    
     return {
         'caller_id': claims.get('sub', 'unknown'),
         'is_admin': 'Admin' in user_groups,
-        'is_creator': 'Creator' in user_groups
+        'is_creator': 'Creator' in user_groups,
+        'creator_email': ''
     }
 
 def lambda_handler(event: dict, context) -> dict:
@@ -89,14 +102,19 @@ def lambda_handler(event: dict, context) -> dict:
         
     path_parameters = event.get('pathParameters') or {}
     event_id = path_parameters.get('eventId')
-    if not event_id and path.startswith('/api/v1/events/'):
+    if not event_id and (path.startswith('/api/v1/events/') or path.startswith('/api/v1/creator/events/')):
         parts = [p for p in path.strip('/').split('/') if p]
         if len(parts) >= 4 and parts[2] == 'events':
+            event_id = parts[3]
+        elif len(parts) >= 4 and parts[1] == 'creator' and parts[2] == 'events':
             event_id = parts[3]
     
     action = f"{http_method} {path}"
     
     ctx = get_user_context(event)
+    
+    # Helper: is this one of the password-less creator routes?
+    is_creator_route = path.startswith('/api/v1/creator/')
     
     try:
         if path == '/api/v1/health' and http_method == 'GET':
@@ -109,17 +127,23 @@ def lambda_handler(event: dict, context) -> dict:
             }
             return build_response(200, health)
             
-        elif path == '/api/v1/events' and http_method == 'GET':
+        elif (path == '/api/v1/events' or path == '/api/v1/creator/events') and http_method == 'GET':
+            if is_creator_route and not ctx['creator_email']:
+                return build_response(401, format_error("Creator email required", "UNAUTHORIZED"))
             response = list_events(event, ctx)
             log_event(request_id, "N/A", "list_events", start_time, "success")
             return response
             
-        elif path == '/api/v1/analytics' and http_method == 'GET':
+        elif (path == '/api/v1/analytics' or path == '/api/v1/creator/analytics') and http_method == 'GET':
+            if is_creator_route and not ctx['creator_email']:
+                return build_response(401, format_error("Creator email required", "UNAUTHORIZED"))
             response = get_analytics(ctx)
             log_event(request_id, "N/A", "get_analytics", start_time, "success")
             return response
             
-        elif path == '/api/v1/events' and http_method == 'POST':
+        elif (path == '/api/v1/events' or path == '/api/v1/creator/events') and http_method == 'POST':
+            if is_creator_route and not ctx['creator_email']:
+                return build_response(401, format_error("Creator email required", "UNAUTHORIZED"))
             if not ctx['is_admin'] and not ctx['is_creator']:
                 return build_response(403, format_error("Forbidden: Need Creator or Admin role", "FORBIDDEN"))
             body = json.loads(event.get('body', '{}'))
@@ -133,7 +157,17 @@ def lambda_handler(event: dict, context) -> dict:
                 log_event(request_id, event_id, "list_registrations", start_time, "success")
                 return response
 
-        elif path.startswith('/api/v1/events/') and event_id:
+        elif path.startswith('/api/v1/creator/events/') and path.endswith('/registrations') and event_id:
+            if not ctx['creator_email']:
+                return build_response(401, format_error("Creator email required", "UNAUTHORIZED"))
+            if http_method == 'GET':
+                response = list_event_registrations(event_id, event, ctx)
+                log_event(request_id, event_id, "list_registrations", start_time, "success")
+                return response
+
+        elif (path.startswith('/api/v1/events/') or path.startswith('/api/v1/creator/events/')) and event_id:
+            if is_creator_route and not ctx['creator_email']:
+                return build_response(401, format_error("Creator email required", "UNAUTHORIZED"))
             if http_method == 'GET':
                 response = get_event(event_id)
                 log_event(request_id, event_id, "get_event", start_time, "success")
@@ -243,7 +277,7 @@ def create_event(body: dict, ctx: dict) -> tuple[dict, str]:
         'PK': f"EVENT#{event_id}",
         'SK': f"AUDIT#{now}",
         'action': "EVENT_CREATED",
-        'actor': "admin",
+        'actor': ctx.get('caller_id', 'unknown'),
         'details': "Event created"
     }
     
@@ -334,7 +368,7 @@ def update_event(event_id: str, body: dict, ctx: dict) -> dict:
         'PK': f"EVENT#{event_id}",
         'SK': f"AUDIT#{now}",
         'action': "EVENT_UPDATED",
-        'actor': "admin",
+        'actor': ctx.get('caller_id', 'unknown'),
         'details': json.dumps({k: v for k, v in body.items() if k in updatable_fields})
     }
     
@@ -380,7 +414,7 @@ def delete_event(event_id: str, ctx: dict) -> dict:
         'PK': f"EVENT#{event_id}",
         'SK': f"AUDIT#{now}",
         'action': "EVENT_DELETED",
-        'actor': "admin",
+        'actor': ctx.get('caller_id', 'unknown'),
         'details': "Event deleted"
     }
     

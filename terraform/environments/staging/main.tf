@@ -124,6 +124,44 @@ resource "aws_apigatewayv2_route" "events_registrations_get" {
   authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
 }
 
+# --- Password-less Creator Routes (email identity, no JWT) ---
+
+resource "aws_apigatewayv2_route" "creator_events_get" {
+  api_id    = module.api_gateway.api_id
+  route_key = "GET /api/v1/creator/events"
+  target    = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "creator_events_post" {
+  api_id    = module.api_gateway.api_id
+  route_key = "POST /api/v1/creator/events"
+  target    = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "creator_events_put" {
+  api_id    = module.api_gateway.api_id
+  route_key = "PUT /api/v1/creator/events/{eventId}"
+  target    = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "creator_events_delete" {
+  api_id    = module.api_gateway.api_id
+  route_key = "DELETE /api/v1/creator/events/{eventId}"
+  target    = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "creator_events_registrations_get" {
+  api_id    = module.api_gateway.api_id
+  route_key = "GET /api/v1/creator/events/{eventId}/registrations"
+  target    = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "creator_analytics_get" {
+  api_id    = module.api_gateway.api_id
+  route_key = "GET /api/v1/creator/analytics"
+  target    = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
+}
+
 resource "aws_apigatewayv2_route" "analytics_get" {
   api_id             = module.api_gateway.api_id
   route_key          = "GET /api/v1/analytics"
@@ -286,6 +324,12 @@ resource "aws_apigatewayv2_route" "checkins_get" {
   target             = "integrations/${aws_apigatewayv2_integration.checkin_integration.id}"
   authorization_type = "JWT"
   authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
+}
+
+resource "aws_apigatewayv2_route" "creator_checkins_get" {
+  api_id    = module.api_gateway.api_id
+  route_key = "GET /api/v1/creator/events/{eventId}/check-ins"
+  target    = "integrations/${aws_apigatewayv2_integration.checkin_integration.id}"
 }
 
 resource "aws_lambda_permission" "checkin_api_gw" {

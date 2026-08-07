@@ -565,3 +565,177 @@ def test_list_event_registrations_csv_format(setup_table, dynamodb_client):
     assert resp['headers']['Content-Type'] == 'text/csv'
     assert 'attachment; filename="event_evt123_registrations.csv"' in resp['headers']['Content-Disposition']
     assert 'Jane Doe' in resp['body']
+
+
+# --- Password-less Creator (email identity) flow ---
+
+def make_creator_event(method: str, path: str, email: str = 'creator@example.com'):
+    return {
+        'requestContext': {'http': {'method': method, 'path': path}},
+        'headers': {'X-Creator-Email': email}
+    }
+
+
+def test_creator_requires_email_401(setup_table):
+    from app import lambda_handler
+    event = {
+        'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/creator/events'}}
+    }
+    resp = lambda_handler(event, None)
+    assert resp['statusCode'] == 401
+    body = json.loads(resp['body'])
+    assert body['errorCode'] == 'UNAUTHORIZED'
+
+
+def test_creator_create_and_list_own_events(setup_table):
+    from app import lambda_handler
+
+    create = make_creator_event('POST', '/api/v1/creator/events')
+    create['body'] = json.dumps({
+        'name': 'Creator Event',
+        'date': '2024-01-01',
+        'venue': 'Creator Venue',
+        'capacity': 50
+    })
+    resp = lambda_handler(create, None)
+    assert resp['statusCode'] == 201
+    body = json.loads(resp['body'])
+    assert body['ownerId'] == 'creator@example.com'
+    event_id = body['eventId']
+
+    list_req = make_creator_event('GET', '/api/v1/creator/events')
+    resp2 = lambda_handler(list_req, None)
+    assert resp2['statusCode'] == 200
+    events = json.loads(resp2['body'])['events']
+    assert len(events) == 1
+    assert events[0]['eventId'] == event_id
+    assert events[0]['ownerId'] == 'creator@example.com'
+
+    other_req = make_creator_event('GET', '/api/v1/creator/events', email='other@example.com')
+    resp3 = lambda_handler(other_req, None)
+    assert resp3['statusCode'] == 200
+    assert json.loads(resp3['body'])['events'] == []
+
+
+def test_creator_update_delete_own_event(setup_table):
+    from app import lambda_handler
+
+    create = make_creator_event('POST', '/api/v1/creator/events')
+    create['body'] = json.dumps({'name': 'Owned', 'date': '2024-01-01', 'venue': 'V', 'capacity': 10})
+    event_id = json.loads(lambda_handler(create, None)['body'])['eventId']
+
+    update = make_creator_event('PUT', f'/api/v1/creator/events/{event_id}')
+    update['pathParameters'] = {'eventId': event_id}
+    update['body'] = json.dumps({'name': 'Renamed'})
+    resp = lambda_handler(update, None)
+    assert resp['statusCode'] == 200
+    assert json.loads(resp['body'])['name'] == 'Renamed'
+
+    other = make_creator_event('PUT', f'/api/v1/creator/events/{event_id}', email='other@example.com')
+    other['pathParameters'] = {'eventId': event_id}
+    other['body'] = json.dumps({'name': 'Hijack'})
+    resp2 = lambda_handler(other, None)
+    assert resp2['statusCode'] == 403
+
+    delete = make_creator_event('DELETE', f'/api/v1/creator/events/{event_id}')
+    delete['pathParameters'] = {'eventId': event_id}
+    resp3 = lambda_handler(delete, None)
+    assert resp3['statusCode'] == 204
+
+
+def test_creator_analytics_scoped_to_email(setup_table, dynamodb_client):
+    from app import lambda_handler
+    table_name = os.environ['TABLE_NAME']
+    dynamodb_client.put_item(
+        TableName=table_name,
+        Item={
+            'PK': {'S': 'EVENT#mine'},
+            'SK': {'S': 'METADATA'},
+            'eventId': {'S': 'mine'},
+            'ownerId': {'S': 'creator@example.com'},
+            'status': {'S': 'available'}
+        }
+    )
+    dynamodb_client.put_item(
+        TableName=table_name,
+        Item={
+            'PK': {'S': 'EVENT#other'},
+            'SK': {'S': 'METADATA'},
+            'eventId': {'S': 'other'},
+            'ownerId': {'S': 'someone-else@example.com'},
+            'status': {'S': 'available'}
+        }
+    )
+    dynamodb_client.put_item(
+        TableName=table_name,
+        Item={
+            'PK': {'S': 'EVENT#mine'},
+            'SK': {'S': 'REG#a@example.com'},
+            'eventId': {'S': 'mine'},
+            'status': {'S': 'checked_in'}
+        }
+    )
+    dynamodb_client.put_item(
+        TableName=table_name,
+        Item={
+            'PK': {'S': 'EVENT#other'},
+            'SK': {'S': 'REG#b@example.com'},
+            'eventId': {'S': 'other'},
+            'status': {'S': 'registered'}
+        }
+    )
+
+    req = make_creator_event('GET', '/api/v1/creator/analytics')
+    resp = lambda_handler(req, None)
+    assert resp['statusCode'] == 200
+    body = json.loads(resp['body'])
+    assert body['totalEvents'] == 1
+    assert body['totalRegistrations'] == 1
+    assert body['attendanceRate'] == 100.0
+
+
+def test_creator_registrations_own_only(setup_table, dynamodb_client):
+    from app import lambda_handler
+    table_name = os.environ['TABLE_NAME']
+    dynamodb_client.put_item(
+        TableName=table_name,
+        Item={
+            'PK': {'S': 'EVENT#mine'},
+            'SK': {'S': 'METADATA'},
+            'eventId': {'S': 'mine'},
+            'ownerId': {'S': 'creator@example.com'}
+        }
+    )
+    dynamodb_client.put_item(
+        TableName=table_name,
+        Item={
+            'PK': {'S': 'EVENT#mine'},
+            'SK': {'S': 'REG#reg1'},
+            'ticketId': {'S': 'tkt1'},
+            'name': {'S': 'Attendee One'},
+            'status': {'S': 'registered'}
+        }
+    )
+
+    own = make_creator_event('GET', '/api/v1/creator/events/mine/registrations')
+    own['pathParameters'] = {'eventId': 'mine'}
+    resp = lambda_handler(own, None)
+    assert resp['statusCode'] == 200
+    regs = json.loads(resp['body'])
+    assert len(regs) == 1
+    assert regs[0]['ticketId'] == 'tkt1'
+
+    foreign = make_creator_event('GET', '/api/v1/creator/events/mine/registrations', email='other@example.com')
+    foreign['pathParameters'] = {'eventId': 'mine'}
+    resp2 = lambda_handler(foreign, None)
+    assert resp2['statusCode'] == 403
+
+
+def test_creator_route_requires_email_on_registrations(setup_table):
+    from app import lambda_handler
+    event = {
+        'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/creator/events/evt1/registrations'}},
+        'pathParameters': {'eventId': 'evt1'}
+    }
+    resp = lambda_handler(event, None)
+    assert resp['statusCode'] == 401

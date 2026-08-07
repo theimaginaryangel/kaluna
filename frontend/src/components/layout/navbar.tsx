@@ -24,6 +24,7 @@ export function Navbar() {
     { href: '/', label: 'Explore' },
     { href: '/events', label: 'Events' },
     { href: '/checkin', label: 'Check-In' },
+    { href: '/admin/creator-login', label: 'Creator' },
     { href: '/admin', label: 'Admin' },
   ];
 
