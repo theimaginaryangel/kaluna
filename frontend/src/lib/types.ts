@@ -17,6 +17,7 @@ export interface Event {
   ownerId?: string;
   waitlistEnabled?: boolean;
   slug?: string;
+  imageUrl?: string;
 }
 
 export interface Registration {

@@ -48,6 +48,15 @@ def validate_event_input(body: dict, is_update: bool = False) -> str | None:
     if 'waitlistEnabled' in body and not isinstance(body['waitlistEnabled'], bool):
         return 'waitlistEnabled must be a boolean'
     
+    if 'imageUrl' in body and body['imageUrl'] not in (None, ''):
+        image_url = body['imageUrl']
+        if not isinstance(image_url, str):
+            return 'imageUrl must be a string'
+        if len(image_url) > 2048:
+            return 'imageUrl must be at most 2048 characters'
+        if not re.match(r'^https://\S+$', image_url.strip()):
+            return 'imageUrl must be a valid https URL'
+    
     return None
 
 def get_user_context(event: dict):
@@ -225,6 +234,10 @@ def create_event(body: dict, ctx: dict) -> tuple[dict, str]:
         'createdAt': now
     }
     
+    image_url = (body.get('imageUrl') or '').strip()
+    if image_url:
+        item['imageUrl'] = image_url
+    
     # Write audit log and event in a transaction
     audit_item = {
         'PK': f"EVENT#{event_id}",
@@ -287,7 +300,10 @@ def update_event(event_id: str, body: dict, ctx: dict) -> dict:
     expr_attr_values = {}
     expr_attr_names = {}
     
-    updatable_fields = ['name', 'date', 'venue', 'capacity', 'waitlistEnabled']
+    updatable_fields = ['name', 'date', 'venue', 'capacity', 'waitlistEnabled', 'imageUrl']
+    
+    if 'imageUrl' in body:
+        body['imageUrl'] = (body['imageUrl'] or '').strip()
     
     if 'capacity' in body:
         old_cap = int(old_item.get('capacity', 0))

@@ -180,6 +180,78 @@ def test_update_event_success(setup_table):
     assert body2['waitlistEnabled'] == True
 
 
+def test_create_event_with_image_url(setup_table):
+    from app import lambda_handler
+
+    image_url = 'https://images.unsplash.com/photo-123?w=1200'
+    create = {
+        'requestContext': make_admin_ctx('POST', '/api/v1/events'),
+        'body': json.dumps({
+            'name': 'Imaged Event',
+            'date': '2024-01-01',
+            'venue': 'V',
+            'capacity': 10,
+            'imageUrl': image_url
+        })
+    }
+    resp = lambda_handler(create, None)
+    assert resp['statusCode'] == 201
+    body = json.loads(resp['body'])
+    assert body['imageUrl'] == image_url
+
+    event_id = body['eventId']
+    get = {
+        'requestContext': {'http': {'method': 'GET', 'path': f'/api/v1/events/{event_id}'}},
+        'pathParameters': {'eventId': event_id}
+    }
+    assert json.loads(lambda_handler(get, None)['body'])['imageUrl'] == image_url
+
+
+def test_create_event_rejects_invalid_image_url(setup_table):
+    from app import lambda_handler
+    create = {
+        'requestContext': make_admin_ctx('POST', '/api/v1/events'),
+        'body': json.dumps({
+            'name': 'Bad Image',
+            'date': '2024-01-01',
+            'venue': 'V',
+            'capacity': 10,
+            'imageUrl': 'javascript:alert(1)'
+        })
+    }
+    resp = lambda_handler(create, None)
+    assert resp['statusCode'] == 400
+    assert json.loads(resp['body'])['errorCode'] == 'BAD_REQUEST'
+
+
+def test_update_event_image_url(setup_table):
+    from app import lambda_handler
+    create = {
+        'requestContext': make_admin_ctx('POST', '/api/v1/events'),
+        'body': json.dumps({'name': 'Event', 'date': '2024-01-01', 'venue': 'V', 'capacity': 10})
+    }
+    event_id = json.loads(lambda_handler(create, None)['body'])['eventId']
+
+    image_url = 'https://cdn.example.com/banner.png'
+    update = {
+        'requestContext': make_admin_ctx('PUT', f'/api/v1/events/{event_id}'),
+        'pathParameters': {'eventId': event_id},
+        'body': json.dumps({'imageUrl': image_url})
+    }
+    resp = lambda_handler(update, None)
+    assert resp['statusCode'] == 200
+    assert json.loads(resp['body'])['imageUrl'] == image_url
+
+    clear = {
+        'requestContext': make_admin_ctx('PUT', f'/api/v1/events/{event_id}'),
+        'pathParameters': {'eventId': event_id},
+        'body': json.dumps({'imageUrl': ''})
+    }
+    resp2 = lambda_handler(clear, None)
+    assert resp2['statusCode'] == 200
+    assert json.loads(resp2['body'])['imageUrl'] == ''
+
+
 def test_update_event_not_found(setup_table):
     from app import lambda_handler
     update = {

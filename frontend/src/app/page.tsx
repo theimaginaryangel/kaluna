@@ -11,6 +11,7 @@ import { StatusBadge } from '@/components/ui/badge';
 import { PinkShimmerSkeleton, EventCardSkeleton } from '@/components/ui/skeleton';
 import { Calendar, MapPin, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
 import { AvatarStack } from '@/components/ui/avatar-stack';
+import { EventImage } from '@/components/ui/event-image';
 import { cn } from '@/lib/utils';
 
 export default function Home() {
@@ -202,11 +203,13 @@ export default function Home() {
                   <Card className="flex flex-col h-full justify-between group rounded-3xl border border-slate-100 dark:border-slate-800/50 shadow-soft hover:shadow-lg dark:hover:border-slate-700 bg-white dark:bg-[#1C1C1E] transition-all duration-400 overflow-hidden">
                     <div>
                       <div className="relative h-64 w-full overflow-hidden bg-slate-100 dark:bg-slate-900">
-                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-200 to-slate-400 dark:from-slate-800 dark:to-slate-700">
-                          <span className="text-xl font-semibold uppercase tracking-[0.3em] text-slate-700 dark:text-slate-200">
-                            {event.name || event.title}
-                          </span>
-                        </div>
+                        <EventImage
+                          src={event.imageUrl}
+                          seed={event.eventId || event.id || event.name}
+                          alt={event.name || event.title || 'Event'}
+                          className="transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
                         <div className="absolute top-4 right-4">
                           <StatusBadge status={event.status} />
                         </div>

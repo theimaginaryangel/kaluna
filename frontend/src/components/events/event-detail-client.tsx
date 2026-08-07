@@ -10,6 +10,7 @@ import { CategoryBadge, StatusBadge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { PinkShimmerSkeleton } from '@/components/ui/skeleton';
 import { RegistrationForm } from '@/components/events/registration-form';
+import { EventImage } from '@/components/ui/event-image';
 import {
   Calendar,
   Clock,
@@ -131,11 +132,12 @@ export function EventDetailClient({ id }: { id: string }) {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         {/* Banner Image Frame */}
         <div className="relative w-full h-80 sm:h-[28rem] overflow-hidden rounded-3xl border border-transparent shadow-soft bg-slate-100 dark:bg-slate-900">
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-200 to-slate-400 dark:from-slate-800 dark:to-slate-700">
-            <span className="text-3xl font-semibold uppercase tracking-[0.3em] text-slate-700 dark:text-slate-200">
-              {event.name || event.title}
-            </span>
-          </div>
+          <EventImage
+            src={event.imageUrl}
+            seed={event.eventId || event.id || event.name}
+            alt={event.name || event.title || 'Event'}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
           
           {/* Badges overlay */}
           <div className="absolute top-6 left-6 flex items-center gap-3">
