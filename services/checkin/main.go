@@ -87,6 +87,9 @@ func handler(ctx context.Context, request events.APIGatewayV2HTTPRequest) (event
 
 	method := request.RequestContext.HTTP.Method
 	path := request.RequestContext.HTTP.Path
+	if path == "" {
+		path = request.RawPath
+	}
 	action := method + " " + path
 
 	if method == "POST" && strings.HasSuffix(path, "/api/v1/check-in") {

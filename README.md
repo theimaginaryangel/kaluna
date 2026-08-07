@@ -49,7 +49,17 @@ openapi.yaml      API contract
 
 ## Status
 
-Backend API, Terraform IaC, Next.js Frontend, Automated Waitlists, ICS Calendar Invites, Social Proof Avatars, and Cognito RBAC are **100% complete, fully tested, and committed to main**.
+Backend API, Terraform IaC, Next.js Frontend, Automated Waitlists, ICS Calendar Invites, Social Proof Avatars, Cognito RBAC, Live Check-In Feed, Per-Role Dashboard Analytics, and Event Delete are **100% complete, fully tested, and committed to main**.
+
+## Recent Changes
+
+- **Check-in fix**: Resolved `POST /api/v1/check-in` 404 caused by `PayloadFormatVersion: 1.0` on all three API Gateway integrations. Updated to `2.0` in Terraform and via CLI.
+- **Live check-in feed**: Dashboard now fetches real attendees from `GET /api/v1/events/{eventId}/check-ins` across all events in parallel.
+- **Per-role analytics**: Creator tab shows stats scoped to their own events; Admin (Godmode) tab shows platform-wide totals.
+- **Event delete**: Trash button on each event row in the dashboard calls `DELETE /api/v1/events/{id}` with confirmation dialog.
+- **Avatar stack**: `AvatarStack` wired to real `capacity - seatsRemaining` count per event card.
+- **Hot pink sparkle**: Button and wordmark logo now show `SparkleBurst` at top-right on hover, outside `overflow-hidden` clip boundary.
+- **Seed data**: 6 demo events seeded directly to `kaluna-prod-table` via `scripts/seed.py`.
 
 ## Quick Start (Deployment)
 

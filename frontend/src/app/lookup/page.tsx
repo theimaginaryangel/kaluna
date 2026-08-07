@@ -70,6 +70,7 @@ export default function TicketLookupPage() {
           : null
       );
     } catch (err: any) {
+      setTicket(null);
       if (err instanceof KalunaApiError) {
         setError({
           message: err.message,

@@ -69,7 +69,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <motion.button
         ref={ref}
         disabled={disabled || isLoading}
-        whileHover={{ scale: disabled || isLoading ? 1 : 1.03, boxShadow: '0px 0px 18px rgba(255, 45, 135, 0.35)' }}
+        whileHover={{ scale: disabled || isLoading ? 1 : 1.03, boxShadow: '0px 0px 22px rgba(255, 45, 135, 0.6)' }}
         whileTap={{ scale: disabled || isLoading ? 1 : 0.96 }}
         transition={{ type: 'spring', stiffness: 400, damping: 15 }}
         onHoverStart={() => setIsHovered(true)}
@@ -79,7 +79,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           onClick?.(e);
         }}
         className={cn(
-          'relative overflow-hidden inline-flex items-center justify-center select-none outline-none cursor-pointer',
+          'relative inline-flex items-center justify-center select-none outline-none cursor-pointer',
           'ring-pink-focus',
           variantStyles[variant],
           sizeStyles[size],
@@ -133,7 +133,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           ))}
         </span>
 
-        <SparkleBurst active={isHovered && !disabled && !isLoading} count={3} />
+        {/* Sparkle burst — outside overflow-hidden, anchored top-right */}
+        <span className="absolute -top-3 -right-2 pointer-events-none z-20" style={{ overflow: 'visible' }}>
+          <SparkleBurst active={isHovered && !disabled && !isLoading} count={3} />
+        </span>
       </motion.button>
     );
   }

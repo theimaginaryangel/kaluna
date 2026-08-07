@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   LogOut,
   RefreshCw,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -30,8 +31,10 @@ export default function AdminDashboardPage() {
   const router = useRouter();
   const [stats, setStats] = React.useState<AdminStats | null>(null);
   const [events, setEvents] = React.useState<Event[]>([]);
+  const [checkIns, setCheckIns] = React.useState<Registration[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isExporting, setIsExporting] = React.useState(false);
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
   const [activeTab, setActiveTab] = React.useState<'my-events' | 'all-events'>('my-events');
 
   const loadDashboardData = React.useCallback(async () => {
@@ -43,6 +46,17 @@ export default function AdminDashboardPage() {
       ]);
       setStats(adminStats);
       setEvents(eventsList);
+
+      // Fetch check-ins for all events in parallel
+      const checkInResults = await Promise.allSettled(
+        eventsList.map((e) => api.getCheckIns(e.eventId || e.id))
+      );
+      const allAttendees = checkInResults
+        .flatMap((r) => (r.status === 'fulfilled' ? r.value.attendees : []))
+        .filter((a) => a.status === 'checked_in')
+        .sort((a, b) => (b.registeredAt > a.registeredAt ? 1 : -1))
+        .slice(0, 20);
+      setCheckIns(allAttendees);
     } catch (err) {
       console.error('Failed to load admin stats', err);
     } finally {
@@ -67,6 +81,20 @@ export default function AdminDashboardPage() {
       localStorage.removeItem('kaluna_admin_user');
     }
     router.push('/admin/login');
+  };
+
+  const handleDelete = async (eventId: string, eventName: string) => {
+    if (!window.confirm(`Delete "${eventName}"? This cannot be undone.`)) return;
+    setDeletingId(eventId);
+    try {
+      await api.deleteEvent(eventId);
+      setEvents((prev) => prev.filter((e) => (e.eventId || e.id) !== eventId));
+    } catch (err) {
+      console.error('Failed to delete event', err);
+      alert('Failed to delete event. Please try again.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleExportCSV = async () => {
@@ -108,6 +136,29 @@ export default function AdminDashboardPage() {
     }
     return events;
   }, [events, activeTab]);
+
+  const tabStats = React.useMemo(() => {
+    if (activeTab === 'all-events') {
+      return {
+        totalEvents: stats?.totalEvents ?? events.length,
+        totalRegistrations: stats?.totalRegistrations ?? 0,
+        totalCheckIns: checkIns.length,
+        capacityUtilization: stats?.capacityUtilization ?? 0,
+      };
+    }
+    // Creator view — scoped to displayedEvents only
+    const myEvents = displayedEvents;
+    const myRegistered = myEvents.reduce((acc, e) => acc + Math.max(0, e.capacity - e.seatsRemaining), 0);
+    const myCapacity = myEvents.reduce((acc, e) => acc + e.capacity, 0);
+    const myEventIds = new Set(myEvents.map((e) => e.eventId || e.id));
+    const myCheckIns = checkIns.filter((c) => myEventIds.has(c.eventId)).length;
+    return {
+      totalEvents: myEvents.length,
+      totalRegistrations: myRegistered,
+      totalCheckIns: myCheckIns,
+      capacityUtilization: myCapacity > 0 ? Math.round((myRegistered / myCapacity) * 100) : 0,
+    };
+  }, [activeTab, displayedEvents, events, stats, checkIns]);
 
   const appleSpringEase = [0.25, 0.1, 0.25, 1] as const;
 
@@ -217,9 +268,9 @@ export default function AdminDashboardPage() {
               </div>
               <div className="mt-3">
                 <span className="text-3xl font-extrabold font-mono text-slate-900 dark:text-white">
-                  {stats?.totalEvents ?? displayedEvents.length}
+                  {tabStats.totalEvents}
                 </span>
-                <p className="text-[11px] text-slate-400 mt-1">Active event listings</p>
+                <p className="text-[11px] text-slate-400 mt-1">{activeTab === 'my-events' ? 'Your event listings' : 'Active event listings'}</p>
               </div>
             </Card>
 
@@ -235,9 +286,9 @@ export default function AdminDashboardPage() {
               </div>
               <div className="mt-3">
                 <span className="text-3xl font-extrabold font-mono text-slate-900 dark:text-white">
-                  {stats?.totalRegistrations ?? 325}
+                  {tabStats.totalRegistrations}
                 </span>
-                <p className="text-[11px] text-emerald-400 mt-1">+14% vs last week</p>
+                <p className="text-[11px] text-emerald-400 mt-1">{activeTab === 'my-events' ? 'Across your events' : 'Platform-wide total'}</p>
               </div>
             </Card>
 
@@ -253,9 +304,9 @@ export default function AdminDashboardPage() {
               </div>
               <div className="mt-3">
                 <span className="text-3xl font-extrabold font-mono text-slate-900 dark:text-white">
-                  {stats?.totalCheckIns ?? 184}
+                  {tabStats.totalCheckIns}
                 </span>
-                <p className="text-[11px] text-slate-400 mt-1">Scanned at venue door</p>
+                <p className="text-[11px] text-slate-400 mt-1">{activeTab === 'my-events' ? 'At your events' : 'Scanned at venue door'}</p>
               </div>
             </Card>
 
@@ -271,9 +322,9 @@ export default function AdminDashboardPage() {
               </div>
               <div className="mt-3">
                 <span className="text-3xl font-extrabold font-mono text-slate-900 dark:text-white">
-                  {stats?.capacityUtilization ?? 76}%
+                  {tabStats.capacityUtilization}%
                 </span>
-                <p className="text-[11px] text-slate-400 mt-1">Overall fill rate</p>
+                <p className="text-[11px] text-slate-400 mt-1">{activeTab === 'my-events' ? 'Your events fill rate' : 'Overall fill rate'}</p>
               </div>
             </Card>
           </div>
@@ -321,12 +372,24 @@ export default function AdminDashboardPage() {
                             <span className="text-xs font-mono text-slate-600 dark:text-slate-300">
                               {Math.max(0, event.capacity - event.seatsRemaining)} / {event.capacity} ({fillPercent}%)
                             </span>
+                            <div className="flex items-center gap-2">
                             <Link href={`/admin/events/edit?id=${event.id || event.eventId}`}>
                               <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800">
                                 <Edit className="w-3 h-3" />
                                 <span>Edit</span>
                               </Button>
                             </Link>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(event.eventId || event.id, event.name || event.title || '')}
+                              isLoading={deletingId === (event.eventId || event.id)}
+                              className="h-7 px-2 text-xs gap-1 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Delete</span>
+                            </Button>
+                            </div>
                           </div>
                         </div>
 
@@ -374,36 +437,30 @@ export default function AdminDashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {(stats?.recentCheckIns || []).map((chk) => (
-                    <div
-                      key={chk.id}
-                      className="p-3 rounded-xl bg-slate-50 dark:bg-[#090A0F] border border-slate-200 dark:border-slate-800 space-y-1.5"
-                    >
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-mono text-slate-700 dark:text-slate-300 font-bold">{chk.ticketCode}</span>
-                        <Badge
-                          variant={
-                            chk.status === 'success'
-                              ? 'available'
-                              : chk.status === 'already_checked_in'
-                              ? 'limited'
-                              : 'soldOut'
-                          }
-                          className="text-[10px] py-0 px-2 uppercase"
-                        >
-                          {chk.status}
-                        </Badge>
+                  {checkIns.length === 0 ? (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-6">No check-ins yet.</p>
+                  ) : (
+                    checkIns.map((chk) => (
+                      <div
+                        key={chk.ticketId || chk.id}
+                        className="p-3 rounded-xl bg-slate-50 dark:bg-[#090A0F] border border-slate-200 dark:border-slate-800 space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-mono text-slate-700 dark:text-slate-300 font-bold truncate max-w-[120px]">
+                            {chk.ticketId || chk.ticketCode}
+                          </span>
+                          <Badge variant="available" className="text-[10px] py-0 px-2 uppercase shrink-0">
+                            checked in
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-slate-900 dark:text-white font-medium truncate">{chk.userName || chk.name}</p>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{chk.userEmail || chk.email}</p>
+                        <div className="text-[10px] text-slate-500 font-mono pt-1 border-t border-slate-200 dark:border-slate-900">
+                          {chk.registeredAt?.split('T')[1]?.slice(0, 8) || chk.registeredAt}
+                        </div>
                       </div>
-
-                      <p className="text-xs text-slate-900 dark:text-white font-medium truncate">{chk.userName}</p>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{chk.eventTitle}</p>
-
-                      <div className="text-[10px] text-slate-500 dark:text-slate-500 font-mono pt-1 border-t border-slate-200 dark:border-slate-900 flex justify-between">
-                        <span>{chk.timestamp.split('T')[1]?.slice(0, 8) || chk.timestamp}</span>
-                        {chk.note && <span className="truncate max-w-[120px]">{chk.note}</span>}
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               )}
             </div>

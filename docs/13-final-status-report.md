@@ -115,15 +115,18 @@ dynamodb.meta.client.transact_write_items(
 
 | Feature | User Functionality | Technical Implementation | Verified Status |
 |---|---|---|---|
-| **Event CRUD** | Create, view, update, delete events | Python `events` Lambda with JSON validation, pagination cursors, and transactional audit logging. | **LIVE-TESTED** |
+| **Event CRUD** | Create, view, update, delete events | Python `events` Lambda with JSON validation, pagination cursors, and transactional audit logging. Delete button in admin dashboard calls `DELETE /api/v1/events/{id}` with JWT auth and confirmation dialog. | **LIVE-TESTED** |
 | **Registration** | Sign up for event, receive confirmation | Python `registrations` Lambda with email regex validation, idempotency checks, and DynamoDB transactions. | **LIVE-TESTED** |
 | **Capacity Locking** | Prevents overselling event seats | Conditional expressions (`seatsRemaining > 0`) inside DynamoDB TransactWriteItems. | **LIVE-TESTED** |
-| **QR Check-in** | Scan tickets at the door | Go Lambda service using SDK v2, querying GSI1 and executing atomic status transitions (`registered` → `checked_in`). | **LIVE-TESTED** |
-| **Automated Waitlists** | Overflow queue when full | Registrations Lambda catches `ConditionalCheckFailedException`, writes user to `status: "waitlisted"`. On cancellation, auto-promotes earliest waitlisted user. | **ROUTE-EXISTS / CODE-COMPLETE** (Deployed code update pending Step 6 pipeline apply) |
-| **Calendar Invites** | 1-click Google/Apple calendar add | Python MIME multipart email generator (`generate_ics()`) attaching standard RFC 5545 `event.ics` files via SES. | **ROUTE-EXISTS / CODE-COMPLETE** (Deployed code update pending Step 6 pipeline apply) |
-| **Avatar Stack** | Visual social proof of attendees | Next.js `AvatarStack` component rendering DiceBear SVG avatars (`api.dicebear.com/7.x/avataaars`) on event cards. | **LIVE-TESTED** |
-| **RBAC / Godmode** | Creator vs Admin access split | Cognito User Groups (`Admin`, `Creator`) checked at API Gateway JWT authorizer & Lambda layer (`cognito:groups` claim filtering `ownerId`). | **ROUTE-EXISTS / CODE-COMPLETE** (Deployed code update pending Step 6 pipeline apply) |
-| **Admin Dashboard** | Live stats & event management | Next.js App Router client dashboard with capacity progress bars, real-time check-in stream, CSV export, and client session guard. | **LIVE-TESTED** |
+| **QR Check-in** | Scan tickets at the door | Go Lambda service using SDK v2, querying GSI1 and executing atomic status transitions (`registered` → `checked_in`). Fixed `PayloadFormatVersion` from `1.0` → `2.0` on all three API Gateway integrations. | **LIVE-TESTED** |
+| **Live Check-In Feed** | Real-time attendee stream in admin dashboard | Dashboard fetches `GET /api/v1/events/{eventId}/check-ins` for all events in parallel via `Promise.allSettled`, filters `checked_in` status, sorts by time. | **LIVE-TESTED** |
+| **Per-Role Analytics** | Different stats for Creator vs Admin tabs | Creator tab computes stats scoped to `displayedEvents` (registrations = `capacity - seatsRemaining`, check-ins filtered by eventId). Admin tab shows platform-wide API totals. | **LIVE-TESTED** |
+| **Automated Waitlists** | Overflow queue when full | Registrations Lambda catches `ConditionalCheckFailedException`, writes user to `status: "waitlisted"`. On cancellation, auto-promotes earliest waitlisted user. | **ROUTE-EXISTS / CODE-COMPLETE** |
+| **Calendar Invites** | 1-click Google/Apple calendar add | Python MIME multipart email generator (`generate_ics()`) attaching standard RFC 5545 `event.ics` files via SES. | **ROUTE-EXISTS / CODE-COMPLETE** |
+| **Avatar Stack** | Visual social proof with live count | `AvatarStack` component wired to real `capacity - seatsRemaining` per event. Shows up to 5 DiceBear avatars + actual registered count. Returns `null` when 0 registered. | **LIVE-TESTED** |
+| **Hot Pink Sparkle UI** | Button & logo hover animation | `SparkleBurst` component positioned at `-top-3 -right-2` outside `overflow-hidden` on buttons and navbar/footer wordmark. `#FF2D87` color transition on hover. | **LIVE-TESTED** |
+| **RBAC / Godmode** | Creator vs Admin access split | Cognito User Groups (`Admin`, `Creator`) checked at API Gateway JWT authorizer & Lambda layer (`cognito:groups` claim filtering `ownerId`). | **ROUTE-EXISTS / CODE-COMPLETE** |
+| **Admin Dashboard** | Live stats & event management | Next.js App Router client dashboard with capacity progress bars, real-time check-in stream, CSV export, delete with confirmation, and client session guard. | **LIVE-TESTED** |
 
 ---
 
@@ -190,8 +193,10 @@ dynamodb.meta.client.transact_write_items(
 ## I. Live Status Summary
 
 - **Live Public Custom API**: `https://apikaluna.bennyduah.com/api/v1` (Healthy, HTTP 200 OK)
-- **Git State**: Clean, all local changes committed (`feat: implement waitlist, calendar ics attachments, social avatars, rbac, and frontend UI fixes`) and pushed to `main` branch.
+- **Git State**: Clean, all changes committed and pushed to `main`.
 - **Frontend Export**: Static Next.js export (`output: 'export'`) compiled successfully into 38 pages.
+- **Prod DynamoDB**: 7 events seeded (6 demo + 1 real test event). All registrations and check-ins live.
+- **Recent fixes committed**: Check-in 404 (PayloadFormatVersion), live check-in feed, per-role analytics, event delete, avatar stack live count, sparkle UI, navbar wordmark animation.
 
 ---
 

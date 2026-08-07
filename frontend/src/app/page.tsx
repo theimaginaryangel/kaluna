@@ -10,6 +10,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { StatusBadge } from '@/components/ui/badge';
 import { PinkShimmerSkeleton, EventCardSkeleton } from '@/components/ui/skeleton';
 import { Calendar, MapPin, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
+import { AvatarStack } from '@/components/ui/avatar-stack';
 import { cn } from '@/lib/utils';
 
 export default function Home() {
@@ -233,6 +234,7 @@ export default function Home() {
                     </div>
 
                     <CardFooter className="pt-6 pb-6 flex-col items-start gap-4">
+                      <AvatarStack registeredCount={Math.max(0, event.capacity - event.seatsRemaining)} className="w-full" />
                       <div className="flex items-center justify-between w-full border-t-2 border-slate-100 dark:border-slate-800 pt-6">
                         <span className="text-lg font-bold font-mono text-slate-900 dark:text-white">
                           {event.seatsRemaining > 0 ? `${event.seatsRemaining} spots left` : 'Sold out'}

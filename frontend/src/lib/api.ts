@@ -523,7 +523,7 @@ export const api = {
    * Check in a ticket by code
    */
   async checkInTicket(ticketCode: string): Promise<CheckIn> {
-    const code = ticketCode.trim().toUpperCase();
+    const code = ticketCode.trim();
     try {
       return await request<CheckIn>('/api/v1/check-in', {
         method: 'POST',
@@ -532,7 +532,7 @@ export const api = {
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
 
-      const ticket = demoStore.tickets[code];
+      const ticket = demoStore.tickets[code] || demoStore.tickets[code.toUpperCase()];
       const timestamp = new Date().toISOString();
 
       if (!ticket) {
@@ -764,6 +764,33 @@ export const api = {
       demoStore.events[idx] = updated as unknown as (typeof demoStore.events)[number];
       return updated;
     }
+  },
+
+  /**
+   * Delete Event (Admin)
+   */
+  async deleteEvent(id: string): Promise<void> {
+    try {
+      await request<unknown>(`/api/v1/events/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      if (err instanceof KalunaApiError) throw err;
+      const idx = demoStore.events.findIndex((e) => e.id === id);
+      if (idx !== -1) demoStore.events.splice(idx, 1);
+    }
+  },
+
+  /**
+   * Get check-ins for an event
+   */
+  async getCheckIns(eventId: string): Promise<{ checkedIn: number; total: number; attendees: Registration[] }> {
+    const payload = await request<{ checkedIn: number; total: number; attendees: unknown[] }>(
+      `/api/v1/events/${encodeURIComponent(eventId)}/check-ins`
+    );
+    return {
+      checkedIn: payload.checkedIn,
+      total: payload.total,
+      attendees: (payload.attendees || []).map((a) => normalizeRegistration(a as Record<string, unknown>)),
+    };
   },
 
   /**

@@ -75,10 +75,11 @@ resource "aws_lambda_function" "events" {
 
 # Add API Gateway integration for Events
 resource "aws_apigatewayv2_integration" "events_integration" {
-  api_id             = module.api_gateway.api_id
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
-  integration_uri    = aws_lambda_function.events.invoke_arn
+  api_id                 = module.api_gateway.api_id
+  integration_type       = "AWS_PROXY"
+  integration_method     = "POST"
+  integration_uri        = aws_lambda_function.events.invoke_arn
+  payload_format_version = "2.0"
 }
 
 resource "aws_apigatewayv2_route" "events_get_all" {
@@ -185,10 +186,11 @@ resource "aws_lambda_function" "registrations" {
 }
 
 resource "aws_apigatewayv2_integration" "registrations_integration" {
-  api_id             = module.api_gateway.api_id
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
-  integration_uri    = aws_lambda_function.registrations.invoke_arn
+  api_id                 = module.api_gateway.api_id
+  integration_type       = "AWS_PROXY"
+  integration_method     = "POST"
+  integration_uri        = aws_lambda_function.registrations.invoke_arn
+  payload_format_version = "2.0"
 }
 
 resource "aws_apigatewayv2_route" "registrations_post" {
@@ -269,10 +271,11 @@ resource "aws_lambda_function" "checkin" {
 }
 
 resource "aws_apigatewayv2_integration" "checkin_integration" {
-  api_id             = module.api_gateway.api_id
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
-  integration_uri    = aws_lambda_function.checkin.invoke_arn
+  api_id                 = module.api_gateway.api_id
+  integration_type       = "AWS_PROXY"
+  integration_method     = "POST"
+  integration_uri        = aws_lambda_function.checkin.invoke_arn
+  payload_format_version = "2.0"
 }
 
 resource "aws_apigatewayv2_route" "checkin_post" {

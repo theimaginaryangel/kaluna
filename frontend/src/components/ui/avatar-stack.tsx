@@ -1,20 +1,18 @@
+'use client';
+
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 interface AvatarStackProps {
-  count?: number;
+  registeredCount?: number;
   className?: string;
 }
 
-export function AvatarStack({ count = 3, className }: AvatarStackProps) {
-  // Generate random seed array based on count
-  const seeds = React.useMemo(
-    () => Array.from({ length: count }, (_, i) => `seed-${Math.random().toString(36).substring(7)}-${i}`),
-    [count]
-  );
-  
-  // Random extra count
-  const extra = React.useMemo(() => Math.floor(Math.random() * 50) + 10, []);
+export function AvatarStack({ registeredCount = 0, className }: AvatarStackProps) {
+  const visibleCount = Math.min(5, registeredCount);
+  const seeds = Array.from({ length: visibleCount }, (_, i) => `kaluna-attendee-${i}`);
+
+  if (registeredCount === 0) return null;
 
   return (
     <div className={cn('flex items-center', className)}>
@@ -29,7 +27,7 @@ export function AvatarStack({ count = 3, className }: AvatarStackProps) {
         ))}
       </div>
       <div className="ml-3 text-xs font-medium text-slate-500 dark:text-slate-400">
-        +{extra} going
+        {registeredCount} going
       </div>
     </div>
   );
