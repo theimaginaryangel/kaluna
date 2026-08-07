@@ -65,6 +65,20 @@ def setup_table(dynamodb_client, table_name):
 
 
 
+def make_admin_ctx(method: str, path: str):
+    return {
+        'http': {'method': method, 'path': path},
+        'authorizer': {
+            'jwt': {
+                'claims': {
+                    'sub': 'test-admin-id',
+                    'cognito:groups': ['Admin']
+                }
+            }
+        }
+    }
+
+
 def test_health_endpoint(setup_table):
     from app import lambda_handler
     event = {'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/health'}}}
@@ -80,7 +94,7 @@ def test_create_and_get_event(setup_table):
     from app import lambda_handler
     
     create_event = {
-        'requestContext': {'http': {'method': 'POST', 'path': '/api/v1/events'}},
+        'requestContext': make_admin_ctx('POST', '/api/v1/events'),
         'body': json.dumps({
             'name': 'Test Event',
             'date': '2024-01-01',
@@ -111,7 +125,7 @@ def test_create_and_get_event(setup_table):
 def test_create_event_missing_fields(setup_table):
     from app import lambda_handler
     event = {
-        'requestContext': {'http': {'method': 'POST', 'path': '/api/v1/events'}},
+        'requestContext': make_admin_ctx('POST', '/api/v1/events'),
         'body': json.dumps({'name': 'Incomplete Event'})
     }
     response = lambda_handler(event, None)
@@ -124,7 +138,7 @@ def test_create_event_missing_fields(setup_table):
 def test_create_event_invalid_capacity(setup_table):
     from app import lambda_handler
     event = {
-        'requestContext': {'http': {'method': 'POST', 'path': '/api/v1/events'}},
+        'requestContext': make_admin_ctx('POST', '/api/v1/events'),
         'body': json.dumps({'name': 'Bad Event', 'date': '2024-01-01', 'venue': 'V', 'capacity': -5})
     }
     response = lambda_handler(event, None)
@@ -147,14 +161,14 @@ def test_update_event_success(setup_table):
     from app import lambda_handler
     
     create = {
-        'requestContext': {'http': {'method': 'POST', 'path': '/api/v1/events'}},
+        'requestContext': make_admin_ctx('POST', '/api/v1/events'),
         'body': json.dumps({'name': 'Original Name', 'date': '2024-01-01', 'venue': 'V1', 'capacity': 50})
     }
     resp = lambda_handler(create, None)
     event_id = json.loads(resp['body'])['eventId']
     
     update = {
-        'requestContext': {'http': {'method': 'PUT', 'path': f'/api/v1/events/{event_id}'}},
+        'requestContext': make_admin_ctx('PUT', f'/api/v1/events/{event_id}'),
         'pathParameters': {'eventId': event_id},
         'body': json.dumps({'name': 'Updated Name', 'capacity': 100, 'waitlistEnabled': True})
     }
@@ -169,7 +183,7 @@ def test_update_event_success(setup_table):
 def test_update_event_not_found(setup_table):
     from app import lambda_handler
     update = {
-        'requestContext': {'http': {'method': 'PUT', 'path': '/api/v1/events/nonexistent'}},
+        'requestContext': make_admin_ctx('PUT', '/api/v1/events/nonexistent'),
         'pathParameters': {'eventId': 'nonexistent'},
         'body': json.dumps({'name': 'New Name'})
     }
@@ -182,14 +196,14 @@ def test_update_event_not_found(setup_table):
 def test_update_event_invalid_input(setup_table):
     from app import lambda_handler
     create = {
-        'requestContext': {'http': {'method': 'POST', 'path': '/api/v1/events'}},
+        'requestContext': make_admin_ctx('POST', '/api/v1/events'),
         'body': json.dumps({'name': 'Event', 'date': '2024-01-01', 'venue': 'V', 'capacity': 10})
     }
     resp = lambda_handler(create, None)
     event_id = json.loads(resp['body'])['eventId']
 
     update = {
-        'requestContext': {'http': {'method': 'PUT', 'path': f'/api/v1/events/{event_id}'}},
+        'requestContext': make_admin_ctx('PUT', f'/api/v1/events/{event_id}'),
         'pathParameters': {'eventId': event_id},
         'body': json.dumps({'capacity': 'not-a-number'})
     }
@@ -201,14 +215,14 @@ def test_delete_event(setup_table):
     from app import lambda_handler
     
     create = {
-        'requestContext': {'http': {'method': 'POST', 'path': '/api/v1/events'}},
+        'requestContext': make_admin_ctx('POST', '/api/v1/events'),
         'body': json.dumps({'name': 'To Delete', 'date': '2024-01-01', 'venue': 'V', 'capacity': 10})
     }
     resp = lambda_handler(create, None)
     event_id = json.loads(resp['body'])['eventId']
     
     delete = {
-        'requestContext': {'http': {'method': 'DELETE', 'path': f'/api/v1/events/{event_id}'}},
+        'requestContext': make_admin_ctx('DELETE', f'/api/v1/events/{event_id}'),
         'pathParameters': {'eventId': event_id}
     }
     resp2 = lambda_handler(delete, None)
@@ -227,13 +241,13 @@ def test_list_events(setup_table):
     
     for i in range(2):
         create = {
-            'requestContext': {'http': {'method': 'POST', 'path': '/api/v1/events'}},
+            'requestContext': make_admin_ctx('POST', '/api/v1/events'),
             'body': json.dumps({'name': f'Event {i}', 'date': '2024-01-01', 'venue': 'V', 'capacity': 10})
         }
         lambda_handler(create, None)
     
     list_event = {
-        'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/events'}}
+        'requestContext': make_admin_ctx('GET', '/api/v1/events')
     }
     resp = lambda_handler(list_event, None)
     assert resp['statusCode'] == 200
