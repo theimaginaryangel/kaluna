@@ -469,7 +469,46 @@ export const api = {
    */
   async getTicket(ticketCode: string): Promise<Ticket> {
     try {
-      return await request<Ticket>(`/api/v1/registrations/${encodeURIComponent(ticketCode)}`);
+      // API returns a bare registration record — no joined event fields.
+      // Fetch the event separately to populate eventTitle, eventDate, location.
+      const reg = await request<Record<string, unknown>>(`/api/v1/registrations/${encodeURIComponent(ticketCode)}`);
+
+      const ticketId = String(reg.ticketId || ticketCode);
+      const eventId = String(reg.eventId || '');
+      const userName = String(reg.name || reg.userName || '');
+      const userEmail = String(reg.email || reg.userEmail || '');
+      const rawStatus = String(reg.status || 'registered');
+      const ticketStatus: Ticket['status'] = rawStatus === 'used' ? 'used' : rawStatus === 'invalid' ? 'invalid' : 'valid';
+
+      let eventTitle = '';
+      let eventDate = '';
+      let location = '';
+
+      if (eventId) {
+        try {
+          const event = await request<Record<string, unknown>>(`/api/v1/events/${eventId}`);
+          eventTitle = String(event.name || event.title || '');
+          eventDate = String(event.date || '');
+          location = String(event.venue || event.location || '');
+        } catch {
+          // event fetch failed — leave fields empty rather than crash
+        }
+      }
+
+      return {
+        ticketCode: ticketId,
+        registrationId: String(reg.registrationId || ''),
+        eventId,
+        eventTitle,
+        eventDate,
+        eventTime: '',
+        location,
+        userName,
+        userEmail,
+        qrValue: `${ticketId}:${eventId}:${userEmail}`,
+        status: ticketStatus,
+        checkedInAt: reg.checkedInAt ? String(reg.checkedInAt) : undefined,
+      };
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
       const ticket = demoStore.tickets[ticketCode.trim().toUpperCase()];
