@@ -6,7 +6,7 @@ Single DynamoDB table: `KalunaTable`. One system, one set of access patterns.
 
 | Entity | PK | SK | Notes |
 |---|---|---|---|
-| Event | `EVENT#{eventId}` | `METADATA` | name, date, venue, capacity, seatsRemaining, status, createdAt |
+| Event | `EVENT#{eventId}` | `METADATA` | name, date, venue, capacity, seatsRemaining, status, createdAt, imageUrl (optional) |
 | Registration | `EVENT#{eventId}` | `REG#{email}` | registrationId, ticketId, name, status, registeredAt |
 | Ticket lookup | `TICKET#{ticketId}` | `METADATA` | GSI1 — reverse lookup, scan → registration in one query |
 | Audit log entry | `EVENT#{eventId}` | `AUDIT#{timestamp}` | action, actor, details — immutable, never updated or deleted |

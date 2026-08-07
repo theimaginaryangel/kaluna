@@ -278,6 +278,7 @@ components:
         capacity: { type: integer }
         seatsRemaining: { type: integer }
         status: { type: string, enum: [available, limited, sold_out] }
+        imageUrl: { type: string, format: uri, maxLength: 2048 }
     EventInput:
       type: object
       required: [name, date, venue, capacity]
@@ -286,6 +287,7 @@ components:
         date: { type: string, format: date }
         venue: { type: string }
         capacity: { type: integer }
+        imageUrl: { type: string, format: uri, maxLength: 2048 }
     Registration:
       type: object
       properties:

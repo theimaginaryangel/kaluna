@@ -76,6 +76,7 @@ function normalizeEvent(payload: Record<string, unknown>): Event {
     ownerId: payload.ownerId ? String(payload.ownerId) : undefined,
     waitlistEnabled: Boolean(payload.waitlistEnabled),
     slug: payload.slug ? String(payload.slug) : undefined,
+    imageUrl: payload.imageUrl ? String(payload.imageUrl) : undefined,
   };
 }
 
@@ -192,6 +193,10 @@ function buildEventApiPayload(eventData: Partial<Event>): Record<string, unknown
   const capacity = Number(eventData.capacity);
   if (Number.isFinite(capacity) && capacity > 0) {
     payload.capacity = capacity;
+  }
+
+  if (eventData.imageUrl !== undefined) {
+    payload.imageUrl = eventData.imageUrl.trim();
   }
 
   return payload;

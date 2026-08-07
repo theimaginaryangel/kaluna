@@ -9,6 +9,7 @@
     "capacity": {"N": "150"},
     "seatsRemaining": {"N": "8"},
     "status": {"S": "limited"},
+    "imageUrl": {"S": "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80"},
     "createdAt": {"S": "2026-07-01T10:00:00Z"},
     "waitlistEnabled": {"BOOL": false},
     "ownerId": {"S": "34d864f8-9001-70b3-1704-693e040da06e"}
@@ -23,6 +24,7 @@
     "capacity": {"N": "50"},
     "seatsRemaining": {"N": "0"},
     "status": {"S": "sold_out"},
+    "imageUrl": {"S": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1200&q=80"},
     "createdAt": {"S": "2026-07-05T14:30:00Z"},
     "waitlistEnabled": {"BOOL": false},
     "ownerId": {"S": "34d864f8-9001-70b3-1704-693e040da06e"}
@@ -37,6 +39,7 @@
     "capacity": {"N": "40"},
     "seatsRemaining": {"N": "18"},
     "status": {"S": "available"},
+    "imageUrl": {"S": "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1200&q=80"},
     "createdAt": {"S": "2026-07-10T09:15:00Z"},
     "waitlistEnabled": {"BOOL": false},
     "ownerId": {"S": "34d864f8-9001-70b3-1704-693e040da06e"}
@@ -51,6 +54,7 @@
     "capacity": {"N": "100"},
     "seatsRemaining": {"N": "65"},
     "status": {"S": "available"},
+    "imageUrl": {"S": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80"},
     "createdAt": {"S": "2026-07-12T11:00:00Z"},
     "waitlistEnabled": {"BOOL": false},
     "ownerId": {"S": "34d864f8-9001-70b3-1704-693e040da06e"}
@@ -65,6 +69,7 @@
     "capacity": {"N": "30"},
     "seatsRemaining": {"N": "12"},
     "status": {"S": "available"},
+    "imageUrl": {"S": "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1200&q=80"},
     "createdAt": {"S": "2026-07-15T16:00:00Z"},
     "waitlistEnabled": {"BOOL": false},
     "ownerId": {"S": "34d864f8-9001-70b3-1704-693e040da06e"}
@@ -79,6 +84,7 @@
     "capacity": {"N": "60"},
     "seatsRemaining": {"N": "2"},
     "status": {"S": "limited"},
+    "imageUrl": {"S": "https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&w=1200&q=80"},
     "createdAt": {"S": "2026-07-18T08:45:00Z"},
     "waitlistEnabled": {"BOOL": false},
     "ownerId": {"S": "34d864f8-9001-70b3-1704-693e040da06e"}

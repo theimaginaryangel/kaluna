@@ -25,7 +25,7 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
   const [speakerRole, setSpeakerRole] = React.useState('');
   const [capacity, setCapacity] = React.useState<number>(initialEvent?.capacity || 100);
   const [price, setPrice] = React.useState<number>(0);
-  const [imageUrl, setImageUrl] = React.useState('');
+  const [imageUrl, setImageUrl] = React.useState(initialEvent?.imageUrl || '');
   const [description, setDescription] = React.useState('');
   const [tagsInput, setTagsInput] = React.useState('');
 
@@ -40,6 +40,9 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
     if (!date.trim()) errs.date = 'Event date is required';
     if (!location.trim()) errs.location = 'Venue location is required';
     if (capacity < 1) errs.capacity = 'Capacity must be at least 1 spot';
+    if (imageUrl.trim() && !/^https:\/\/\S+$/.test(imageUrl.trim())) {
+      errs.imageUrl = 'Banner image must be a valid https URL';
+    }
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -60,9 +63,10 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
       venue: location.trim(),
       location: location.trim(),
       capacity: Number(capacity),
+      imageUrl: imageUrl.trim(),
     };
 
-    // The current backend contract only stores name/date/venue/capacity.
+    // The current backend contract only stores name/date/venue/capacity/imageUrl.
     // The additional form fields remain in local state for future support.
 
     try {
@@ -221,6 +225,7 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
             placeholder="https://images.unsplash.com/..."
             value={imageUrl}
             onChange={(e) => setImageUrl(e.target.value)}
+            error={errors.imageUrl}
             icon={<ImageIcon className="w-4 h-4" />}
             disabled={isSubmitting}
           />
