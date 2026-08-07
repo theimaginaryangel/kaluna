@@ -19,6 +19,7 @@ import (
 
 type DynamoDBClient interface {
 	Query(ctx context.Context, params *dynamodb.QueryInput, optFns ...func(*dynamodb.Options)) (*dynamodb.QueryOutput, error)
+	GetItem(ctx context.Context, params *dynamodb.GetItemInput, optFns ...func(*dynamodb.Options)) (*dynamodb.GetItemOutput, error)
 	TransactWriteItems(ctx context.Context, params *dynamodb.TransactWriteItemsInput, optFns ...func(*dynamodb.Options)) (*dynamodb.TransactWriteItemsOutput, error)
 }
 
@@ -103,7 +104,7 @@ func handler(ctx context.Context, request events.APIGatewayV2HTTPRequest) (event
 		if request.PathParameters != nil {
 			eventID = request.PathParameters["eventId"]
 		}
-		resp := handleGetCheckins(ctx, eventID)
+		resp := handleGetCheckins(ctx, request, eventID)
 		logEvent(reqID, eventID, action, startTime, "success")
 		return resp, nil
 	}
@@ -216,9 +217,14 @@ func handleCheckin(ctx context.Context, req events.APIGatewayV2HTTPRequest) even
 	return buildResponse(200, map[string]string{"message": "Valid ticket, checked in"})
 }
 
-func handleGetCheckins(ctx context.Context, eventID string) events.APIGatewayV2HTTPResponse {
+func handleGetCheckins(ctx context.Context, req events.APIGatewayV2HTTPRequest, eventID string) events.APIGatewayV2HTTPResponse {
 	if dbClient == nil {
 		return buildResponse(500, ErrorResponse{Success: false, Message: "DB client not initialized", ErrorCode: "INTERNAL_ERROR"})
+	}
+
+	// RBAC: only the event owner or an Admin may read the check-in feed for an event.
+	if !isAdminOrOwner(ctx, req, eventID) {
+		return buildResponse(403, ErrorResponse{Success: false, Message: "Forbidden", ErrorCode: "FORBIDDEN"})
 	}
 
 	pk := "EVENT#" + eventID
@@ -263,6 +269,53 @@ func handleGetCheckins(ctx context.Context, eventID string) events.APIGatewayV2H
 		Total:     total,
 		Attendees: attendees,
 	})
+}
+
+func callerClaims(req events.APIGatewayV2HTTPRequest) map[string]string {
+	if req.RequestContext.Authorizer == nil || req.RequestContext.Authorizer.JWT == nil {
+		return nil
+	}
+	return req.RequestContext.Authorizer.JWT.Claims
+}
+
+func isAdminOrOwner(ctx context.Context, req events.APIGatewayV2HTTPRequest, eventID string) bool {
+	claims := callerClaims(req)
+
+	groupsRaw := ""
+	if claims != nil {
+		groupsRaw = claims["cognito:groups"]
+	}
+	for _, group := range strings.Split(strings.Trim(groupsRaw, "[]"), ",") {
+		if strings.TrimSpace(group) == "Admin" {
+			return true
+		}
+	}
+
+	sub := ""
+	if claims != nil {
+		sub = claims["sub"]
+	}
+	if sub == "" || eventID == "" {
+		return false
+	}
+
+	out, err := dbClient.GetItem(ctx, &dynamodb.GetItemInput{
+		TableName: &tableName,
+		Key: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{Value: "EVENT#" + eventID},
+			"SK": &types.AttributeValueMemberS{Value: "METADATA"},
+		},
+	})
+	if err != nil || out.Item == nil {
+		return false
+	}
+
+	var evt map[string]interface{}
+	if err := attributevalue.UnmarshalMap(out.Item, &evt); err != nil {
+		return false
+	}
+	owner, _ := evt["ownerId"].(string)
+	return owner != "" && owner == sub
 }
 
 func main() {

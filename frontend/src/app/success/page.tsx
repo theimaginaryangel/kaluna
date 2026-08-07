@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Ticket, Event } from '@/lib/types';
+import { Ticket } from '@/lib/types';
 import { api } from '@/lib/api';
 import { QRTicket } from '@/components/ui/qr-ticket';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ function SuccessContent() {
   const eventId = searchParams?.get('eventId') || '';
 
   const [ticket, setTicket] = React.useState<Ticket | null>(null);
-  const [event, setEvent] = React.useState<Event | null>(null);
+  const [lookupFailed, setLookupFailed] = React.useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
 
   React.useEffect(() => {
@@ -28,17 +28,11 @@ function SuccessContent() {
           const t = await api.getTicket(ticketCode);
           setTicket(t);
         } catch {
-          // If ticket lookup by code fails, construct fallback ticket object from eventId
+          setLookupFailed(true);
         }
-      }
-
-      if (eventId) {
-        try {
-          const e = await api.getEventById(eventId);
-          setEvent(e);
-        } catch {
-          // Fallback handled
-        }
+      } else if (eventId) {
+        // No ticket code yet; nothing to display until the user finds their pass.
+        setLookupFailed(false);
       }
       setIsLoading(false);
     }
@@ -62,20 +56,31 @@ function SuccessContent() {
     );
   }
 
-  // Construct fallback ticket display if needed
-  const displayTicket: Ticket = ticket || {
-    ticketCode: ticketCode || 'KALUNA-EVT-9999',
-    registrationId: `reg-${Date.now()}`,
-    eventId: event?.id || eventId || 'evt-101',
-    eventTitle: event?.name || event?.title || 'Registered Event',
-    eventDate: event?.date || '2026-08-22',
-    eventTime: '18:00 EST',
-    location: event?.location || event?.venue || 'Kaluna Event Center',
-    userName: 'Registered Attendee',
-    userEmail: 'attendee@example.com',
-    qrValue: `${ticketCode || 'KALUNA-PASS'}:${eventId}:${Date.now()}`,
-    status: 'valid',
-  };
+  if (lookupFailed || !ticket) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-12 space-y-6 text-center">
+        <h1 className="text-2xl font-extrabold text-white tracking-tight">Ticket Not Found</h1>
+        <p className="text-sm text-slate-400 max-w-md mx-auto">
+          We couldn't retrieve your ticket for code <code className="text-slate-200">{ticketCode || '(none)'}</code>.
+          If you just registered, your ticket is available from the Ticket Lookup page using your pass code.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          <Link href="/lookup">
+            <Button variant="white" size="md" className="gap-2 font-bold">
+              <Search className="w-4 h-4" />
+              <span>Ticket Lookup</span>
+            </Button>
+          </Link>
+          <Link href="/">
+            <Button variant="ghost" size="md" className="gap-2">
+              <ArrowLeft className="w-4 h-4 text-slate-400" />
+              <span>Back to Events</span>
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -105,7 +110,7 @@ function SuccessContent() {
 
       {/* Render QRTicket Component */}
       <div className="print:shadow-none">
-        <QRTicket ticket={displayTicket} className="mx-auto" />
+        <QRTicket ticket={ticket} className="mx-auto" />
       </div>
 
       {/* Printable / Download Actions */}

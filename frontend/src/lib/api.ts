@@ -9,13 +9,6 @@ import {
   ApiErrorCode,
 } from './types';
 import { AuthenticationDetails, CognitoUser, CognitoUserPool } from 'amazon-cognito-identity-js';
-import {
-  DEMO_EVENTS,
-  DEMO_REGISTRATIONS,
-  DEMO_TICKETS,
-  DEMO_CHECKINS,
-  DEMO_ADMIN_STATS,
-} from './demo-data';
 
 export class KalunaApiError extends Error implements ApiError {
   errorCode: ApiErrorCode | string;
@@ -37,13 +30,6 @@ export class KalunaApiError extends Error implements ApiError {
 }
 
 // In-memory local fallback store for stateful interactive demo mode
-const demoStore = {
-  events: [...DEMO_EVENTS],
-  registrations: [...DEMO_REGISTRATIONS],
-  tickets: { ...DEMO_TICKETS },
-  checkIns: [...DEMO_CHECKINS],
-};
-
 function normalizeEventStatus(status?: string): Event['status'] {
   switch (status?.toLowerCase()) {
     case 'limited':
@@ -305,25 +291,11 @@ export const api = {
       return (Array.isArray(rawEvents) ? rawEvents : []).map((entry) => normalizeEvent(entry as Record<string, unknown>));
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
-      // Fallback to Demo Data
-      let results = [...demoStore.events];
-      if (params?.category && params.category !== 'All') {
-        results = results.filter((e) => (e as unknown as { category?: EventCategory }).category === params.category);
-      }
-      if (params?.query) {
-        const q = params.query.toLowerCase();
-        results = results.filter((e) => {
-          const title = (e as unknown as { title?: string }).title || e.name || '';
-          const description = (e as unknown as { description?: string }).description || '';
-          const speakerName = (e as unknown as { speaker?: { name?: string } }).speaker?.name || '';
-          const tags = (e as unknown as { tags?: string[] }).tags || [];
-          return title.toLowerCase().includes(q) || description.toLowerCase().includes(q) || speakerName.toLowerCase().includes(q) || tags.some((t) => t.toLowerCase().includes(q));
-        });
-      }
-      if (params?.featured) {
-        results = results.filter((e) => Boolean((e as unknown as { featured?: boolean }).featured));
-      }
-      return results.map((event) => normalizeEvent(event as unknown as Record<string, unknown>));
+      throw new KalunaApiError(
+        (err as Error)?.message || 'Failed to load events',
+        'INTERNAL_ERROR',
+        500
+      );
     }
   },
 
@@ -340,11 +312,11 @@ export const api = {
       return event;
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
-      const event = demoStore.events.find((e) => e.slug === slug || e.id === slug);
-      if (!event) {
-        throw new KalunaApiError(`Event not found: ${slug}`, 'EVENT_NOT_FOUND', 404);
-      }
-      return event;
+      throw new KalunaApiError(
+        (err as Error)?.message || `Failed to load event: ${slug}`,
+        'INTERNAL_ERROR',
+        500
+      );
     }
   },
 
@@ -357,11 +329,11 @@ export const api = {
       return normalizeEvent(payload as Record<string, unknown>);
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
-      const event = demoStore.events.find((e) => e.id === id);
-      if (!event) {
-        throw new KalunaApiError(`Event with ID '${id}' not found`, 'EVENT_NOT_FOUND', 404);
-      }
-      return normalizeEvent(event as unknown as Record<string, unknown>);
+      throw new KalunaApiError(
+        (err as Error)?.message || `Event with ID '${id}' not found`,
+        'INTERNAL_ERROR',
+        500
+      );
     }
   },
 
@@ -391,81 +363,11 @@ export const api = {
       );
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
-
-      // Fallback logic
-      const eventIndex = demoStore.events.findIndex((e) => e.id === data.eventId);
-      if (eventIndex === -1) {
-        throw new KalunaApiError(`Event not found`, 'EVENT_NOT_FOUND', 404);
-      }
-
-      const event = demoStore.events[eventIndex];
-      const registeredCount = Number((event as unknown as { registeredCount?: number }).registeredCount ?? 0);
-
-      if (registeredCount >= event.capacity || event.status === 'Sold Out') {
-        throw new KalunaApiError(
-          `This event is full. Registration closed.`,
-          'EVENT_FULL',
-          422
-        );
-      }
-
-      const duplicate = demoStore.registrations.find(
-        (r) => r.eventId === data.eventId && (r.userEmail || '').toLowerCase() === data.userEmail.toLowerCase()
+      throw new KalunaApiError(
+        (err as Error)?.message || 'Registration failed',
+        'INTERNAL_ERROR',
+        500
       );
-      if (duplicate) {
-        throw new KalunaApiError(
-          `You have already registered for this event with email ${data.userEmail}`,
-          'DUPLICATE_REGISTRATION',
-          409
-        );
-      }
-
-      // Increment registration count
-      const updatedEvent = {
-        ...event,
-        registeredCount: registeredCount + 1,
-        status:
-          registeredCount + 1 >= event.capacity
-            ? ('Sold Out' as const)
-            : registeredCount + 1 >= event.capacity * 0.8
-            ? ('Limited' as const)
-            : event.status,
-      };
-      demoStore.events[eventIndex] = updatedEvent;
-
-      const ticketCode = `KALUNA-${String((event as unknown as { category?: string }).category || 'EVT').slice(0, 3).toUpperCase()}-${Math.floor(
-        1000 + Math.random() * 9000
-      )}`;
-
-      const registration: Registration = {
-        id: `reg-${Date.now()}`,
-        eventId: event.id,
-        eventTitle: event.title,
-        userName: data.userName,
-        userEmail: data.userEmail,
-        ticketCode,
-        registeredAt: new Date().toISOString(),
-        status: 'confirmed',
-      };
-
-      const ticket: Ticket = {
-        ticketCode,
-        registrationId: registration.id,
-        eventId: event.id,
-        eventTitle: event.title || event.name || 'Event',
-        eventDate: event.date,
-        eventTime: '18:00 EST',
-        location: event.location || event.venue || 'Kaluna Event Center',
-        userName: data.userName,
-        userEmail: data.userEmail,
-        qrValue: `${ticketCode}:${event.id}:${data.userEmail}`,
-        status: 'valid',
-      };
-
-      demoStore.registrations.push(registration);
-      demoStore.tickets[ticketCode] = ticket;
-
-      return { registration, ticket };
     }
   },
 
@@ -483,7 +385,12 @@ export const api = {
       const userName = String(reg.name || reg.userName || '');
       const userEmail = String(reg.email || reg.userEmail || '');
       const rawStatus = String(reg.status || 'registered');
-      const ticketStatus: Ticket['status'] = rawStatus === 'used' ? 'used' : rawStatus === 'invalid' ? 'invalid' : 'valid';
+      const ticketStatus: Ticket['status'] =
+        rawStatus === 'checked_in' || rawStatus === 'used'
+          ? 'used'
+          : rawStatus === 'invalid'
+          ? 'invalid'
+          : 'valid';
 
       let eventTitle = '';
       let eventDate = '';
@@ -516,11 +423,11 @@ export const api = {
       };
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
-      const ticket = demoStore.tickets[ticketCode.trim().toUpperCase()];
-      if (!ticket) {
-        throw new KalunaApiError(`Invalid ticket code: ${ticketCode}`, 'INVALID_TICKET', 404);
-      }
-      return ticket;
+      throw new KalunaApiError(
+        (err as Error)?.message || `Invalid ticket code: ${ticketCode}`,
+        'INVALID_TICKET',
+        404
+      );
     }
   },
 
@@ -536,65 +443,11 @@ export const api = {
       });
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
-
-      const ticket = demoStore.tickets[code] || demoStore.tickets[code.toUpperCase()];
-      const timestamp = new Date().toISOString();
-
-      if (!ticket) {
-        const failedCheckIn: CheckIn = {
-          id: `chk-${Date.now()}`,
-          ticketCode: code,
-          eventId: 'unknown',
-          eventTitle: 'Unknown Event',
-          userName: 'Unknown',
-          userEmail: 'unknown@example.com',
-          timestamp,
-          status: 'failed',
-          note: 'Invalid ticket code',
-        };
-        demoStore.checkIns.unshift(failedCheckIn);
-        throw new KalunaApiError(`Ticket code '${code}' is invalid`, 'INVALID_TICKET', 404);
-      }
-
-      if (ticket.status === 'used') {
-        const dupCheckIn: CheckIn = {
-          id: `chk-${Date.now()}`,
-          ticketCode: code,
-          eventId: ticket.eventId,
-          eventTitle: ticket.eventTitle,
-          userName: ticket.userName,
-          userEmail: ticket.userEmail,
-          timestamp,
-          status: 'already_checked_in',
-          note: `Already checked in at ${ticket.checkedInAt || 'prior time'}`,
-        };
-        demoStore.checkIns.unshift(dupCheckIn);
-        throw new KalunaApiError(
-          `Ticket ${code} has already been checked in`,
-          'INVALID_TICKET',
-          400,
-          { checkIn: dupCheckIn }
-        );
-      }
-
-      // Mark used
-      ticket.status = 'used';
-      ticket.checkedInAt = timestamp;
-
-      const successCheckIn: CheckIn = {
-        id: `chk-${Date.now()}`,
-        ticketCode: code,
-        eventId: ticket.eventId,
-        eventTitle: ticket.eventTitle,
-        userName: ticket.userName,
-        userEmail: ticket.userEmail,
-        timestamp,
-        status: 'success',
-        note: 'Check-in successful',
-      };
-      demoStore.checkIns.unshift(successCheckIn);
-
-      return successCheckIn;
+      throw new KalunaApiError(
+        (err as Error)?.message || `Ticket code '${code}' is invalid`,
+        'INVALID_TICKET',
+        404
+      );
     }
   },
 
@@ -607,42 +460,11 @@ export const api = {
       return normalizeAdminStats(payload as Record<string, unknown>);
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
-      const totalRegs = demoStore.registrations.length + 320;
-      const totalCheckInsCount = demoStore.checkIns.filter((c) => c.status === 'success').length + 180;
-      const totalCapacity = demoStore.events.reduce((acc, e) => acc + e.capacity, 0);
-      const totalRegistered = demoStore.events.reduce((acc, e) => acc + Number((e as unknown as { registeredCount?: number }).registeredCount ?? 0), 0);
-
-      return {
-        totalEvents: demoStore.events.length,
-        totalRegistrations: totalRegs,
-        totalCheckIns: totalCheckInsCount,
-        capacityUtilization: Math.round((totalRegistered / (totalCapacity || 1)) * 100),
-        recentRegistrations: [...demoStore.registrations].reverse().slice(0, 10),
-        recentCheckIns: [...demoStore.checkIns].slice(0, 10),
-        categoryBreakdown: [
-          {
-            category: 'Tech',
-            count: demoStore.events.filter((e) => (e as unknown as { category?: EventCategory }).category === 'Tech').length,
-            registrations: demoStore.events
-              .filter((e) => (e as unknown as { category?: EventCategory }).category === 'Tech')
-              .reduce((acc, e) => acc + Number((e as unknown as { registeredCount?: number }).registeredCount ?? 0), 0),
-          },
-          {
-            category: 'Books',
-            count: demoStore.events.filter((e) => (e as unknown as { category?: EventCategory }).category === 'Books').length,
-            registrations: demoStore.events
-              .filter((e) => (e as unknown as { category?: EventCategory }).category === 'Books')
-              .reduce((acc, e) => acc + Number((e as unknown as { registeredCount?: number }).registeredCount ?? 0), 0),
-          },
-          {
-            category: 'Workshop',
-            count: demoStore.events.filter((e) => (e as unknown as { category?: EventCategory }).category === 'Workshop').length,
-            registrations: demoStore.events
-              .filter((e) => (e as unknown as { category?: EventCategory }).category === 'Workshop')
-              .reduce((acc, e) => acc + Number((e as unknown as { registeredCount?: number }).registeredCount ?? 0), 0),
-          },
-        ],
-      };
+      throw new KalunaApiError(
+        (err as Error)?.message || 'Failed to load analytics',
+        'INTERNAL_ERROR',
+        500
+      );
     }
   },
 
@@ -712,23 +534,11 @@ export const api = {
       return normalizeEvent(created as Record<string, unknown>);
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
-
-      const newEvent: Event = {
-        id: `evt-${Date.now()}`,
-        eventId: `evt-${Date.now()}`,
-        name: eventData.name || eventData.title || 'Untitled Event',
-        title: eventData.name || eventData.title || 'Untitled Event',
-        date: eventData.date || new Date().toISOString().split('T')[0],
-        venue: eventData.venue || eventData.location || 'Kaluna Main Stage',
-        location: eventData.venue || eventData.location || 'Kaluna Main Stage',
-        capacity: Number(eventData.capacity) || 100,
-        seatsRemaining: Number(eventData.capacity) || 100,
-        status: 'Available',
-        createdAt: new Date().toISOString(),
-      };
-
-      demoStore.events.unshift(newEvent as unknown as (typeof demoStore.events)[number]);
-      return newEvent;
+      throw new KalunaApiError(
+        (err as Error)?.message || 'Failed to create event',
+        'INTERNAL_ERROR',
+        500
+      );
     }
   },
 
@@ -746,28 +556,11 @@ export const api = {
       return normalizeEvent(updated as Record<string, unknown>);
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
-
-      const idx = demoStore.events.findIndex((e) => e.id === id);
-      if (idx === -1) {
-        throw new KalunaApiError(`Event not found: ${id}`, 'EVENT_NOT_FOUND', 404);
-      }
-
-      const existing = demoStore.events[idx];
-      const updated: Event = {
-        ...normalizeEvent(existing as unknown as Record<string, unknown>),
-        id,
-        eventId: id,
-        name: eventData.name || eventData.title || existing.title || existing.name || '',
-        title: eventData.name || eventData.title || existing.title || existing.name || '',
-        date: eventData.date || existing.date,
-        venue: eventData.venue || eventData.location || existing.location || existing.venue || '',
-        location: eventData.venue || eventData.location || existing.location || existing.venue || '',
-        capacity: eventData.capacity !== undefined ? Number(eventData.capacity) : existing.capacity,
-        seatsRemaining: eventData.capacity !== undefined ? Number(eventData.capacity) : existing.capacity,
-      };
-
-      demoStore.events[idx] = updated as unknown as (typeof demoStore.events)[number];
-      return updated;
+      throw new KalunaApiError(
+        (err as Error)?.message || `Failed to update event: ${id}`,
+        'INTERNAL_ERROR',
+        500
+      );
     }
   },
 
@@ -779,8 +572,11 @@ export const api = {
       await request<unknown>(`/api/v1/events/${id}`, { method: 'DELETE' });
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
-      const idx = demoStore.events.findIndex((e) => e.id === id);
-      if (idx !== -1) demoStore.events.splice(idx, 1);
+      throw new KalunaApiError(
+        (err as Error)?.message || `Failed to delete event: ${id}`,
+        'INTERNAL_ERROR',
+        500
+      );
     }
   },
 
@@ -802,19 +598,21 @@ export const api = {
    * Get Registrations list (Admin / CSV)
    */
   async getRegistrations(eventId?: string): Promise<Registration[]> {
-    const targetEventId = eventId || demoStore.events[0]?.id;
-
-    if (!targetEventId) {
+    if (!eventId) {
       return [];
     }
 
     try {
-      const payload = await request<unknown>(`/api/v1/events/${encodeURIComponent(targetEventId)}/registrations`);
+      const payload = await request<unknown>(`/api/v1/events/${encodeURIComponent(eventId)}/registrations`);
       const registrations = unwrapListResponse<unknown[]>(payload);
       return (Array.isArray(registrations) ? registrations : []).map((entry) => normalizeRegistration(entry as Record<string, unknown>));
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
-      return demoStore.registrations.filter((registration) => registration.eventId === targetEventId);
+      throw new KalunaApiError(
+        (err as Error)?.message || 'Failed to load registrations',
+        'INTERNAL_ERROR',
+        500
+      );
     }
   },
 };

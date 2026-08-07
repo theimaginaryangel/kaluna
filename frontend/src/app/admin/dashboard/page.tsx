@@ -27,6 +27,23 @@ import { cn } from '@/lib/utils';
 
 import { useRouter } from 'next/navigation';
 
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [stats, setStats] = React.useState<AdminStats | null>(null);
@@ -36,9 +53,15 @@ export default function AdminDashboardPage() {
   const [isExporting, setIsExporting] = React.useState(false);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
   const [activeTab, setActiveTab] = React.useState<'my-events' | 'all-events'>('my-events');
+  const [loadError, setLoadError] = React.useState<string | null>(null);
+  const [userGroups, setUserGroups] = React.useState<string[]>([]);
+  const [callerSub, setCallerSub] = React.useState('');
+
+  const isAdmin = userGroups.includes('Admin');
 
   const loadDashboardData = React.useCallback(async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const [adminStats, eventsList] = await Promise.all([
         api.getAdminStats(),
@@ -59,6 +82,7 @@ export default function AdminDashboardPage() {
       setCheckIns(allAttendees);
     } catch (err) {
       console.error('Failed to load admin stats', err);
+      setLoadError(err instanceof Error ? err.message : 'Failed to load dashboard data.');
     } finally {
       setIsLoading(false);
     }
@@ -70,6 +94,18 @@ export default function AdminDashboardPage() {
       if (!token) {
         router.push('/admin/login');
         return;
+      }
+      const payload = decodeJwtPayload(token);
+      const groupsRaw = (payload?.['cognito:groups'] as string) || '';
+      const groups = groupsRaw
+        .replace(/[\[\]]/g, '')
+        .split(',')
+        .map((g) => g.trim())
+        .filter(Boolean);
+      setUserGroups(groups);
+      setCallerSub(String(payload?.['sub'] || ''));
+      if (!groups.includes('Admin')) {
+        setActiveTab('my-events');
       }
     }
     loadDashboardData();
@@ -101,7 +137,6 @@ export default function AdminDashboardPage() {
     setIsExporting(true);
     try {
       const registrations = await api.getRegistrations(events[0]?.id);
-      
       const csvHeaders = ['Registration ID', 'Event Title', 'Attendee Name', 'Attendee Email', 'Ticket Code', 'Status', 'Registered At'];
       const csvRows = registrations.map((r) => [
         `"${r.id}"`,
@@ -131,11 +166,15 @@ export default function AdminDashboardPage() {
   };
 
   const displayedEvents = React.useMemo(() => {
-    if (activeTab === 'my-events') {
-      return events.slice(0, Math.max(1, Math.floor(events.length / 2)));
+    if (activeTab === 'all-events') {
+      return events;
     }
-    return events;
-  }, [events, activeTab]);
+    // Creator view — only events this user owns
+    if (callerSub) {
+      return events.filter((e) => e.ownerId === callerSub);
+    }
+    return events.slice(0, Math.max(1, Math.floor(events.length / 2)));
+  }, [events, activeTab, callerSub]);
 
   const tabStats = React.useMemo(() => {
     if (activeTab === 'all-events') {
@@ -233,18 +272,27 @@ export default function AdminDashboardPage() {
           >
             My Events (Creator)
           </button>
-          <button
-            onClick={() => setActiveTab('all-events')}
-            className={cn(
-              "px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-200",
-              activeTab === 'all-events'
-                ? "bg-slate-900 text-white shadow-soft dark:bg-white dark:text-slate-900"
-                : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-            )}
-          >
-            All Events (Godmode)
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setActiveTab('all-events')}
+              className={cn(
+                "px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-200",
+                activeTab === 'all-events'
+                  ? "bg-slate-900 text-white shadow-soft dark:bg-white dark:text-slate-900"
+                  : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+              )}
+            >
+              All Events (Godmode)
+            </button>
+          )}
         </div>
+
+        {/* Error banner */}
+        {loadError && (
+          <div className="rounded-2xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
+            {loadError}
+          </div>
+        )}
 
         {/* 4 Stat Cards Grid */}
         {isLoading ? (

@@ -2,9 +2,6 @@ import { EventDetailClient } from '@/components/events/event-detail-client';
 
 export async function generateStaticParams() {
   return [
-    { id: 'demo-tech-1' },
-    { id: 'demo-books-1' },
-    { id: 'demo-workshop-1' },
     { id: 'evt-101' },
     { id: 'evt-102' },
     { id: 'evt-103' },

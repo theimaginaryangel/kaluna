@@ -401,7 +401,8 @@ def test_get_analytics(setup_table, dynamodb_client, table_name):
     )
     
     req = {
-        'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/analytics'}}
+        'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/analytics'},
+                           'authorizer': {'jwt': {'claims': {'sub': 'admin-user', 'cognito:groups': '[Admin]'}}}}
     }
     resp = lambda_handler(req, None)
     assert resp['statusCode'] == 200
@@ -410,6 +411,61 @@ def test_get_analytics(setup_table, dynamodb_client, table_name):
     assert body['upcomingEvents'] == 1
     assert body['totalRegistrations'] == 2
     assert body['attendanceRate'] == 50.0
+
+
+def test_get_analytics_creator_scoped(setup_table, dynamodb_client, table_name):
+    from app import lambda_handler
+    from app import get_analytics
+
+    dynamodb_client.put_item(
+        TableName=table_name,
+        Item={
+            'PK': {'S': 'EVENT#mine'},
+            'SK': {'S': 'METADATA'},
+            'eventId': {'S': 'mine'},
+            'ownerId': {'S': 'creator-user'},
+            'status': {'S': 'available'}
+        }
+    )
+    dynamodb_client.put_item(
+        TableName=table_name,
+        Item={
+            'PK': {'S': 'EVENT#other'},
+            'SK': {'S': 'METADATA'},
+            'eventId': {'S': 'other'},
+            'ownerId': {'S': 'another-user'},
+            'status': {'S': 'available'}
+        }
+    )
+    dynamodb_client.put_item(
+        TableName=table_name,
+        Item={
+            'PK': {'S': 'EVENT#mine'},
+            'SK': {'S': 'REG#user1@example.com'},
+            'eventId': {'S': 'mine'},
+            'status': {'S': 'checked_in'}
+        }
+    )
+    dynamodb_client.put_item(
+        TableName=table_name,
+        Item={
+            'PK': {'S': 'EVENT#other'},
+            'SK': {'S': 'REG#user2@example.com'},
+            'eventId': {'S': 'other'},
+            'status': {'S': 'registered'}
+        }
+    )
+
+    req = {
+        'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/analytics'},
+                           'authorizer': {'jwt': {'claims': {'sub': 'creator-user', 'cognito:groups': '[Creator]'}}}}
+    }
+    resp = lambda_handler(req, None)
+    assert resp['statusCode'] == 200
+    body = json.loads(resp['body'])
+    assert body['totalEvents'] == 1
+    assert body['totalRegistrations'] == 1
+    assert body['attendanceRate'] == 100.0
 
 
 def test_route_not_found(setup_table):
@@ -437,7 +493,8 @@ def test_list_event_registrations_route_precedence(setup_table, dynamodb_client)
     )
     
     event_req = {
-        'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/events/evt123/registrations'}},
+        'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/events/evt123/registrations'},
+                           'authorizer': {'jwt': {'claims': {'sub': 'admin-user', 'cognito:groups': '[Admin]'}}}},
         'pathParameters': {'eventId': 'evt123'}
     }
     resp = lambda_handler(event_req, None)
@@ -447,6 +504,39 @@ def test_list_event_registrations_route_precedence(setup_table, dynamodb_client)
     assert len(body) == 1
     assert body[0]['name'] == 'Jane Doe'
     assert body[0]['ticketId'] == 'tkt789'
+
+
+def test_list_event_registrations_creator_forbidden(setup_table, dynamodb_client):
+    from app import lambda_handler
+    table_name = os.environ['TABLE_NAME']
+    dynamodb_client.put_item(
+        TableName=table_name,
+        Item={
+            'PK': {'S': 'EVENT#evt123'},
+            'SK': {'S': 'METADATA'},
+            'eventId': {'S': 'evt123'},
+            'ownerId': {'S': 'other-user'}
+        }
+    )
+    dynamodb_client.put_item(
+        TableName=table_name,
+        Item={
+            'PK': {'S': 'EVENT#evt123'},
+            'SK': {'S': 'REG#reg456'},
+            'ticketId': {'S': 'tkt789'},
+            'name': {'S': 'Jane Doe'},
+            'email': {'S': 'jane@example.com'},
+            'status': {'S': 'registered'}
+        }
+    )
+
+    event_req = {
+        'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/events/evt123/registrations'},
+                           'authorizer': {'jwt': {'claims': {'sub': 'creator-user', 'cognito:groups': '[Creator]'}}}},
+        'pathParameters': {'eventId': 'evt123'}
+    }
+    resp = lambda_handler(event_req, None)
+    assert resp['statusCode'] == 403
 
 
 def test_list_event_registrations_csv_format(setup_table, dynamodb_client):
@@ -465,7 +555,8 @@ def test_list_event_registrations_csv_format(setup_table, dynamodb_client):
     )
     
     event_req = {
-        'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/events/evt123/registrations'}},
+        'requestContext': {'http': {'method': 'GET', 'path': '/api/v1/events/evt123/registrations'},
+                           'authorizer': {'jwt': {'claims': {'sub': 'admin-user', 'cognito:groups': '[Admin]'}}}},
         'pathParameters': {'eventId': 'evt123'},
         'queryStringParameters': {'format': 'csv'}
     }

@@ -27,6 +27,21 @@ module "cognito" {
   environment    = local.environment
 }
 
+# --- Frontend Hosting (S3 + CloudFront) ---
+
+data "aws_acm_certificate" "frontend" {
+  domain   = "kaluna.bennyduah.com"
+  statuses = ["ISSUED"]
+}
+
+module "frontend" {
+  source          = "../../modules/frontend"
+  environment     = local.environment
+  bucket_name     = "kaluna-${local.environment}-frontend"
+  domain_name     = "kaluna.bennyduah.com"
+  certificate_arn = data.aws_acm_certificate.frontend.arn
+}
+
 resource "aws_apigatewayv2_authorizer" "jwt_auth" {
   api_id           = module.api_gateway.api_id
   authorizer_type  = "JWT"

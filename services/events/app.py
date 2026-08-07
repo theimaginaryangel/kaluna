@@ -115,7 +115,7 @@ def lambda_handler(event: dict, context) -> dict:
             return response
             
         elif path == '/api/v1/analytics' and http_method == 'GET':
-            response = get_analytics()
+            response = get_analytics(ctx)
             log_event(request_id, "N/A", "get_analytics", start_time, "success")
             return response
             
@@ -129,7 +129,7 @@ def lambda_handler(event: dict, context) -> dict:
             
         elif path.startswith('/api/v1/events/') and path.endswith('/registrations') and event_id:
             if http_method == 'GET':
-                response = list_event_registrations(event_id, event)
+                response = list_event_registrations(event_id, event, ctx)
                 log_event(request_id, event_id, "list_registrations", start_time, "success")
                 return response
 
@@ -414,7 +414,16 @@ def clean_item(item: dict) -> dict:
     cleaned.pop('GSI1SK', None)
     return cleaned
 
-def list_event_registrations(event_id: str, event_obj: dict) -> dict:
+def list_event_registrations(event_id: str, event_obj: dict, ctx: dict) -> dict:
+    if not ctx['is_admin']:
+        event_item = table.get_item(
+            Key={'PK': f"EVENT#{event_id}", 'SK': "METADATA"}
+        ).get('Item')
+        if not event_item:
+            return build_response(404, format_error("Event not found", "NOT_FOUND"))
+        if event_item.get('ownerId') != ctx['caller_id']:
+            return build_response(403, format_error("Forbidden", "FORBIDDEN"))
+
     response = table.query(
         KeyConditionExpression=Key('PK').eq(f"EVENT#{event_id}") & Key('SK').begins_with("REG#")
     )
@@ -445,12 +454,22 @@ def list_event_registrations(event_id: str, event_obj: dict) -> dict:
         
     return build_response(200, registrations)
 
-def get_analytics() -> dict:
+def get_analytics(ctx: dict) -> dict:
     # In a real heavy production app, we would maintain these counters transactionally or use a secondary index.
     # For this scale, a single scan to aggregate data is acceptable.
     response = table.scan()
     items = response.get('Items', [])
     
+    caller_id = ctx.get('caller_id', '')
+    is_admin = ctx.get('is_admin', False)
+
+    # Creators only see analytics for their own events.
+    my_event_ids = set()
+    if not is_admin:
+        for item in items:
+            if item.get('SK') == 'METADATA' and item.get('ownerId') == caller_id:
+                my_event_ids.add(item.get('eventId'))
+
     total_events = 0
     upcoming_events = 0
     total_registrations = 0
@@ -459,10 +478,14 @@ def get_analytics() -> dict:
     for item in items:
         sk = item.get('SK', '')
         if sk == 'METADATA':
+            if not is_admin and item.get('eventId') not in my_event_ids:
+                continue
             total_events += 1
             if item.get('status') != 'sold_out':
                 upcoming_events += 1
         elif sk.startswith('REG#'):
+            if not is_admin and item.get('eventId') not in my_event_ids:
+                continue
             total_registrations += 1
             if item.get('status') == 'checked_in':
                 total_checked_in += 1

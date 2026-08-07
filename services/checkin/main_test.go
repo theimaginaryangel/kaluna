@@ -12,6 +12,7 @@ import (
 
 type mockDynamoDBClient struct {
 	queryFn              func(ctx context.Context, params *dynamodb.QueryInput, optFns ...func(*dynamodb.Options)) (*dynamodb.QueryOutput, error)
+	getItemFn            func(ctx context.Context, params *dynamodb.GetItemInput, optFns ...func(*dynamodb.Options)) (*dynamodb.GetItemOutput, error)
 	transactWriteItemsFn func(ctx context.Context, params *dynamodb.TransactWriteItemsInput, optFns ...func(*dynamodb.Options)) (*dynamodb.TransactWriteItemsOutput, error)
 }
 
@@ -20,6 +21,13 @@ func (m *mockDynamoDBClient) Query(ctx context.Context, params *dynamodb.QueryIn
 		return m.queryFn(ctx, params, optFns...)
 	}
 	return &dynamodb.QueryOutput{Items: []map[string]types.AttributeValue{}}, nil
+}
+
+func (m *mockDynamoDBClient) GetItem(ctx context.Context, params *dynamodb.GetItemInput, optFns ...func(*dynamodb.Options)) (*dynamodb.GetItemOutput, error) {
+	if m.getItemFn != nil {
+		return m.getItemFn(ctx, params, optFns...)
+	}
+	return &dynamodb.GetItemOutput{Item: map[string]types.AttributeValue{}}, nil
 }
 
 func (m *mockDynamoDBClient) TransactWriteItems(ctx context.Context, params *dynamodb.TransactWriteItemsInput, optFns ...func(*dynamodb.Options)) (*dynamodb.TransactWriteItemsOutput, error) {
@@ -102,6 +110,11 @@ func TestHandlerNilPathParameters(t *testing.T) {
 			HTTP: events.APIGatewayV2HTTPRequestContextHTTPDescription{
 				Method: "GET",
 				Path:   "/api/v1/events/evt123/check-ins",
+			},
+			Authorizer: &events.APIGatewayV2HTTPRequestContextAuthorizerDescription{
+				JWT: &events.APIGatewayV2HTTPRequestContextAuthorizerJWTDescription{
+					Claims: map[string]string{"sub": "admin-user", "cognito:groups": "[Admin]"},
+				},
 			},
 		},
 		PathParameters: nil,
@@ -270,6 +283,11 @@ func TestGetCheckinsListing(t *testing.T) {
 			HTTP: events.APIGatewayV2HTTPRequestContextHTTPDescription{
 				Method: "GET",
 				Path:   "/api/v1/events/evt1/check-ins",
+			},
+			Authorizer: &events.APIGatewayV2HTTPRequestContextAuthorizerDescription{
+				JWT: &events.APIGatewayV2HTTPRequestContextAuthorizerJWTDescription{
+					Claims: map[string]string{"sub": "admin-user", "cognito:groups": "[Admin]"},
+				},
 			},
 		},
 		PathParameters: map[string]string{"eventId": "evt1"},
