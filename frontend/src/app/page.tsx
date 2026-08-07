@@ -70,14 +70,14 @@ export default function Home() {
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4 pt-8">
-            <Link href="/lookup">
+            <Link href="/admin/events/new">
               <Button variant="primary" size="lg" className="font-bold uppercase tracking-widest">
-                Lookup Pass
+                Post an Event
               </Button>
             </Link>
-            <Link href="/admin/login">
+            <Link href="/lookup">
               <Button variant="secondary" size="lg" className="font-bold uppercase tracking-widest">
-                Admin Console
+                Find My Ticket
               </Button>
             </Link>
           </div>

@@ -14,6 +14,32 @@ resource "aws_s3_bucket_public_access_block" "frontend" {
   restrict_public_buckets = true
 }
 
+resource "aws_cloudfront_function" "index_rewrite" {
+  name    = "kaluna-${var.environment}-index-rewrite"
+  runtime = "cloudfront-js-1.0"
+  comment = "Rewrite extensionless routes to their index.html so the static multi-page export resolves correctly"
+  publish = true
+  code    = <<-EOT
+    function handler(event) {
+        var request = event.request;
+        var uri = request.uri;
+
+        // Leave anything with a file extension alone (JS/CSS/images).
+        var lastSegment = uri.substring(uri.lastIndexOf('/') + 1);
+        if (lastSegment.indexOf('.') !== -1) {
+            return request;
+        }
+
+        if (uri.endsWith('/')) {
+            request.uri = uri + 'index.html';
+        } else {
+            request.uri = uri + '/index.html';
+        }
+        return request;
+    }
+  EOT
+}
+
 resource "aws_cloudfront_origin_access_control" "frontend" {
   name                              = "kaluna-${var.environment}-frontend-oac"
   description                       = "OAC for Kaluna frontend S3 bucket"
@@ -51,6 +77,11 @@ resource "aws_cloudfront_distribution" "frontend" {
     min_ttl                = 0
     default_ttl            = 3600
     max_ttl                = 86400
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.index_rewrite.arn
+    }
   }
 
   custom_error_response {
