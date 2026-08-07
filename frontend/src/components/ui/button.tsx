@@ -45,7 +45,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variantStyles = {
       primary:
-        'bg-slate-900 text-white border border-transparent shadow-soft hover:bg-slate-800 hover:border-[#FF2D87]/40 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 dark:hover:border-[#FF2D87]/40',
+        'bg-slate-900 text-white border border-transparent hover:bg-slate-800 hover:border-[#FF2D87]/40 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 dark:hover:border-[#FF2D87]/40',
       secondary:
         'bg-slate-100 text-slate-900 border border-slate-200 hover:bg-slate-200 hover:border-[#FF2D87]/40 dark:bg-slate-800 dark:text-white dark:border-slate-700 dark:hover:bg-slate-700',
       outline:
@@ -53,7 +53,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       ghost:
         'bg-transparent text-slate-700 border border-transparent hover:bg-slate-100 hover:text-[#FF2D87] dark:text-slate-300 dark:hover:bg-slate-800/50 dark:hover:text-[#FF2D87]',
       white:
-        'bg-white text-slate-950 font-semibold border border-slate-200 shadow-soft hover:bg-slate-50 hover:border-[#FF2D87]',
+        'bg-white text-slate-950 font-semibold border border-slate-200 hover:bg-slate-50 hover:border-[#FF2D87]',
     };
 
     const sizeStyles = {

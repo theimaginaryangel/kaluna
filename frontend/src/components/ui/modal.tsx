@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -24,6 +25,13 @@ export function Modal({
   maxWidth = 'md',
   showCloseButton = true,
 }: ModalProps) {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
   // Handle Escape key press
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -54,7 +62,11 @@ export function Modal({
   // Apple spring easing curve [0.25, 0.1, 0.25, 1]
   const appleSpringEase = [0.25, 0.1, 0.25, 1] as const;
 
-  return (
+  if (!mounted) {
+    return null;
+  }
+
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
@@ -114,4 +126,6 @@ export function Modal({
       )}
     </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 }

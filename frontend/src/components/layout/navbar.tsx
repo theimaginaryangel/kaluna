@@ -32,10 +32,10 @@ export function Navbar() {
     <header className="sticky top-0 z-40 w-full bg-white/90 dark:bg-[#1C1C1E]/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors duration-300 print:hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
-        <Link href="/" passHref>
+        <Link href="/">
           <motion.div
-            className="flex items-center gap-2 group ring-pink-focus rounded-md p-1"
-            whileHover={{ scale: 1.05 }}
+            className="relative flex items-center gap-2 group ring-pink-focus rounded-md p-1"
+            whileHover={{ scale: 1.08 }}
             transition={{ type: 'spring', stiffness: 400, damping: 10 }}
           >
             <span className="font-mono text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
@@ -44,6 +44,12 @@ export function Navbar() {
             <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
               EVENTS
             </span>
+            <motion.span
+              className="absolute bottom-0 left-0 h-0.5 bg-[#FF2D87] rounded-full"
+              initial={{ width: 0, opacity: 0 }}
+              whileHover={{ width: '100%', opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+            />
           </motion.div>
         </Link>
 
