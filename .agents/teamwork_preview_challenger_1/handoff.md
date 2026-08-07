@@ -1,87 +1,75 @@
-# Handoff Report
-
-**Agent**: Challenger 1 (Empirical Backend Stress Testing Specialist)  
-**Date**: 2026-08-05  
-**Handoff Type**: Hard (Task Complete)  
-
----
+# Empirical Static Export Verification & Static Color Audit Report
 
 ## 1. Observation
 
-Direct tool execution and file inspection results:
+### Static Color Audit (`frontend/src`)
+Conducted grep searches across `frontend/src` for target tokens `#FF2D87`, `kaluna-pink`, `bg-[#FF2D87]`, and `text-[#FF2D87]`:
+- **`kaluna-pink`**: 0 occurrences found in `frontend/src`.
+- **`#FF2D87`**: 42 occurrences across `frontend/src`. Breakdown of all usages:
+  - **Interactive focus ring / border / text states (`globals.css`, `button.tsx`, `input.tsx`, `badge.tsx`, `card.tsx`, `modal.tsx`, `qr-ticket.tsx`, `navbar.tsx`, `footer.tsx`)**: e.g., `focus-visible:ring-[#FF2D87]`, `hover:border-[#FF2D87]`, `hover:text-[#FF2D87]`, `active:bg-[#FF2D87]`.
+  - **Dynamic route active states (`navbar.tsx`)**: `isActive && 'text-[#FF2D87]'`, `className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#FF2D87] rounded-full"`.
+  - **Button click ripple motion feedback (`button.tsx:117`)**: `className="absolute bg-[#FF2D87]/30 rounded-full animate-ripple-expand -translate-x-1/2 -translate-y-1/2"`.
+  - **Ambient background glow blurs (`admin/login/page.tsx:90`, `not-found.tsx:21`, `page.tsx:57`)**: `bg-[#FF2D87]/10 blur-[60px]`, `bg-[#FF2D87]/10 blur-[90px]`, `bg-[#FF2D87]/10 blur-[130px]`.
+  - **Icon accents (`Sparkles`, `ShieldCheck`, `Activity`, `QrCode`)**: e.g., `<Sparkles className="w-3.5 h-3.5 text-[#FF2D87]" />`, `<ShieldCheck className="w-5 h-5 text-[#FF2D87]" />`.
+  - **Interactive Link (`event-detail-client.tsx:241`)**: `className="text-xs text-[#FF2D87] hover:underline block mt-0.5"`.
+- **Static non-interactive usage**: Zero static body text, static headings, or solid static container backgrounds use `#FF2D87`.
 
-1. **Python Unit Suite Execution**:
-   * Command: `python -m pytest -v --import-mode=importlib`
-   * Output: `34 passed, 26 warnings in 34.35s`
-   * Note on root invocation: Running `pytest -v` without `--import-mode=importlib` caused pytest collection import mismatch errors across modules sharing filename `test_app.py`.
-2. **Go Check-in Unit & Safety Suite Execution**:
-   * Command: `go test -v ./...` in `services/checkin`
-   * Output: `PASS`, 11 test cases passed cleanly including `TestHandlerNilPathParameters` and `TestSafeTypeAssertions`.
-3. **Empirical Backend Stress Suite Execution**:
-   * Command: `python -m pytest -v --import-mode=importlib .agents/teamwork_preview_challenger_1/run_empirical_stress_tests.py`
-   * Output: `4 passed in 6.33s`
-4. **Automated E2E Suite Execution**:
-   * Command: `python e2e_test.py`
-   * Output: `[SUCCESS] ALL E2E TEST SUITES PASSED WITH ZERO 500 INTERNAL SERVER ERRORS! Total Tests Executed: 67, Passed: 67, Failed: 0`.
-5. **Non-Existent Event DELETE Behavior**:
-   * Inspecting `services/events/app.py` lines 327-357: `delete_event` issues a DynamoDB TransactWriteItems Delete call without an existence check (`table.get_item`) or `ConditionExpression`. Calling `DELETE /api/v1/events/{nonexistent_id}` returns HTTP 204 No Content.
+### Static Export Build & Output Inspection (`frontend/out`)
+Executed `npm run build` in `d:\New folder (6)\kaluna\kaluna\frontend`. Output log:
+```
+  ▲ Next.js 14.2.35
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+ ✓ Generating static pages (36/36)
+   Finalizing page optimization ...
+   Collecting build traces ...
+```
 
----
+Verified all 9 requested route HTML outputs in `frontend/out/`:
+1. **Landing route**: `frontend/out/index.html` (31,564 bytes)
+2. **Event detail route**: `frontend/out/events/demo-tech-1/index.html` (25,296 bytes) & prerendered event routes (`evt-101`, `evt-102`, etc.)
+3. **Success route**: `frontend/out/success/index.html` (24,717 bytes)
+4. **Lookup route**: `frontend/out/lookup/index.html` (27,619 bytes)
+5. **Admin login route**: `frontend/out/admin/login/index.html` (29,051 bytes)
+6. **Admin dashboard route**: `frontend/out/admin/dashboard/index.html` (31,091 bytes)
+7. **Create event route**: `frontend/out/admin/events/new/index.html` (39,793 bytes)
+8. **Edit event route**: `frontend/out/admin/events/demo-tech-1/edit/index.html` (26,190 bytes) & prerendered edit routes
+9. **404 route**: `frontend/out/404.html` (27,999 bytes) & `frontend/out/404/index.html` (27,999 bytes)
+
+HTML asset reference verification:
+All generated HTML files contain proper stylesheet and script asset references:
+- Stylesheet: `<link rel="stylesheet" href="/_next/static/css/7f08cbe46edde3fc.css" data-precedence="next"/>`
+- JavaScript Chunks: `<script src="/_next/static/chunks/webpack-a3c37fcbf859f6f9.js" async=""></script>`, layout/page chunks, and shared bundles (`fd9d1056-*.js`, `117-*.js`).
 
 ## 2. Logic Chain
-
-1. **Observation 1 & 2**: Running the full unit test suites across Python services (`events`, `registrations`, `feedback`, `reminders`) and Go check-in service yields 100% pass rates across 45 unit tests when using `--import-mode=importlib`.
-2. **Observation 3**: Executing targeted stress test harnesses (`run_empirical_stress_tests.py`) proves that:
-   - When event capacity is exhausted, `waitlistEnabled=True` places new registrations in `"waitlisted"` status, while `waitlistEnabled=False` rejects with HTTP 409 (`EVENT_FULL`).
-   - Cancelling a registered ticket auto-promotes the earliest waitlisted attendee ordered by `registeredAt` timestamp, while cancelling a waitlisted ticket transitions status to `"cancelled"` without releasing seats or causing incorrect promotions.
-   - Email normalization (`  USER@DOMAIN.COM  ` -> `user@domain.com`) prevents duplicate registrations regardless of letter case or spacing.
-3. **Observation 4 & 5**: Non-existent event registrations correctly return `404 EVENT_NOT_FOUND` and `GET`/`PUT` endpoints return `404 NOT_FOUND`. `DELETE` returns HTTP 204 because DynamoDB delete operations are idempotent by design when unconstrained by conditional expressions.
-4. **Conclusion**: The backend logic, state transitions, email normalization, waitlist auto-promotion, and Go nil parameter handling meet all correctness, safety, and empirical stress requirements.
-
----
+1. **Static Color Audit**:
+   - Objective: Confirm `#FF2D87` / `kaluna-pink` is restricted exclusively to interactive elements, state transitions, motion feedback, ambient glows, and subtle icon accents, with zero static non-interactive usage.
+   - Evidence: Grep search yielded 0 matches for `kaluna-pink`. All 42 occurrences of `#FF2D87` were individually analyzed and verified to be interactive states (focus, hover, active), dynamic active tab indicators, click ripple animations, low-opacity ambient glows (`/10`), or small icon accents.
+   - Inference: The frontend design system adheres strictly to the color specification rule.
+2. **Static Export Build**:
+   - Objective: Confirm Next.js static export (`npm run build`) builds cleanly and generates static HTML files for all 9 routes.
+   - Evidence: `npm run build` completed with 0 errors, generating 36 static HTML files in `frontend/out`.
+   - Inference: Static SSG/export pipeline is fully functional and free of build errors or missing dynamic route parameters.
+3. **HTML File Validation**:
+   - Objective: Ensure generated static HTML files are non-empty and reference valid CSS/JS bundles.
+   - Evidence: File size checks confirmed all 9 key route HTML files range between 24.7 KB and 39.8 KB (non-zero). Direct inspection of HTML content confirmed valid `<link rel="stylesheet">` tags pointing to `/_next/static/css/` and `<script>` tags pointing to `/_next/static/chunks/`.
+   - Inference: Static export pages are fully formed and ready for static file server deployment.
 
 ## 3. Caveats
-
-- **Pytest Invocation**: Standard pytest collection from root requires `--import-mode=importlib` to avoid module name conflicts across service `test_app.py` files.
-- **Idempotent Event Deletion**: `DELETE /api/v1/events/{eventId}` returns 204 even if the event ID does not exist in DynamoDB. This is standard REST idempotency behavior for DELETE operations in serverless architectures, though distinct from 404 responses on GET.
-
----
+- No caveats. All 4 instructions were empirically executed and verified directly on filesystem artifacts and build logs.
 
 ## 4. Conclusion
-
-The Kaluna backend service ecosystem is empirically verified and resilient under stress:
-- **Waitlist Logic**: Correctly handles capacity limits, FIFO waitlisting, auto-promotion on cancellation, and non-consuming waitlisted ticket cancellations.
-- **Data Normalization**: Lowercases and trims email addresses to prevent duplicate registrations via casing tricks.
-- **404 Handling**: Consistently handles non-existent event registrations and lookups.
-- **Go Memory Safety**: Go check-in Lambda handles `nil` path parameters, missing JSON keys, and invalid DynamoDB attribute types without runtime panics.
-
----
+The Kaluna frontend passes empirical static export verification and static color audit with 100% compliance:
+- **Color Audit**: Zero static non-interactive usage of `#FF2D87` / `kaluna-pink`. All occurrences are verified interactive/accent tokens.
+- **Static Export**: Clean build producing 36 prerendered static pages across all 9 route groups, with non-zero file sizes and proper `/_next/static` asset linking.
 
 ## 5. Verification Method
-
-To independently verify all findings and test suites:
-
-1. **Execute Python Unit Test Suite**:
-   ```bash
-   python -m pytest -v --import-mode=importlib
-   ```
-   *Expected*: 34 passed tests across all Python service subdirectories.
-
-2. **Execute Go Unit & Nil Safety Suite**:
-   ```bash
-   cd services/checkin
-   go test -v ./...
-   ```
-   *Expected*: 11 passed tests with zero panics.
-
-3. **Execute Challenger Empirical Stress Test Suite**:
-   ```bash
-   python -m pytest -v --import-mode=importlib .agents/teamwork_preview_challenger_1/run_empirical_stress_tests.py
-   ```
-   *Expected*: 4 passed stress test suites covering waitlists, cancellations, email casing, and 404 handling.
-
-4. **Execute End-to-End Test Suite**:
-   ```bash
-   python e2e_test.py
-   ```
-   *Expected*: 67 passed tests across Tiers 1-4 with 0 failures.
+To independently verify:
+1. Execute color grep check:
+   `rg "#FF2D87" frontend/src`
+2. Execute static export build:
+   `npm run build` in `frontend/`
+3. Check generated HTML files:
+   `Get-ChildItem -Path frontend/out -Recurse -Filter '*.html'`

@@ -7,3 +7,8 @@ variable "environment" {
   description = "Environment (e.g. dev, staging, prod)"
   type        = string
 }
+
+variable "allowed_origins" {
+  description = "List of allowed CORS origins"
+  type        = list(string)
+}

@@ -72,15 +72,15 @@ export default function AdminDashboardPage() {
   const handleExportCSV = async () => {
     setIsExporting(true);
     try {
-      const registrations = await api.getRegistrations();
+      const registrations = await api.getRegistrations(events[0]?.id);
       
       const csvHeaders = ['Registration ID', 'Event Title', 'Attendee Name', 'Attendee Email', 'Ticket Code', 'Status', 'Registered At'];
       const csvRows = registrations.map((r) => [
         `"${r.id}"`,
         `"${r.eventTitle || r.eventId}"`,
-        `"${r.userName}"`,
-        `"${r.userEmail}"`,
-        `"${r.ticketCode}"`,
+        `"${r.userName || r.name || ''}"`,
+        `"${r.userEmail || r.email || ''}"`,
+        `"${r.ticketCode || ''}"`,
         `"${r.status}"`,
         `"${r.registeredAt}"`,
       ]);
@@ -303,26 +303,25 @@ export default function AdminDashboardPage() {
                   {displayedEvents.map((event) => {
                     const fillPercent = Math.min(
                       100,
-                      Math.round((event.registeredCount / (event.capacity || 1)) * 100)
+                      Math.round(((event.capacity - event.seatsRemaining) / (event.capacity || 1)) * 100)
                     );
                     return (
                       <div
-                        key={event.id}
+                        key={event.id || event.eventId}
                         className="p-4 rounded-xl bg-slate-50 dark:bg-[#090A0F] border border-slate-200 dark:border-slate-800 space-y-3"
                       >
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <CategoryBadge category={event.category} />
                             <h4 className="font-bold text-slate-900 dark:text-white text-sm line-clamp-1">
-                              {event.title}
+                              {event.name || event.title}
                             </h4>
                           </div>
 
                           <div className="flex items-center gap-3">
                             <span className="text-xs font-mono text-slate-600 dark:text-slate-300">
-                              {event.registeredCount} / {event.capacity} ({fillPercent}%)
+                              {Math.max(0, event.capacity - event.seatsRemaining)} / {event.capacity} ({fillPercent}%)
                             </span>
-                            <Link href={`/admin/events/edit?id=${event.id}`}>
+                            <Link href={`/admin/events/edit?id=${event.id || event.eventId}`}>
                               <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800">
                                 <Edit className="w-3 h-3" />
                                 <span>Edit</span>

@@ -8,6 +8,7 @@ import {
   ApiError,
   ApiErrorCode,
 } from './types';
+import { AuthenticationDetails, CognitoUser, CognitoUserPool } from 'amazon-cognito-identity-js';
 import {
   DEMO_EVENTS,
   DEMO_REGISTRATIONS,
@@ -43,6 +44,79 @@ const demoStore = {
   checkIns: [...DEMO_CHECKINS],
 };
 
+function normalizeEventStatus(status?: string): Event['status'] {
+  switch (status?.toLowerCase()) {
+    case 'limited':
+      return 'Limited';
+    case 'sold_out':
+      return 'Sold Out';
+    case 'available':
+    default:
+      return 'Available';
+  }
+}
+
+function normalizeEvent(payload: Record<string, unknown>): Event {
+  const eventId = String(payload.eventId || payload.id || '').trim();
+  const capacity = Number(payload.capacity ?? 0);
+  const seatsRemaining = Number(payload.seatsRemaining ?? payload.capacity ?? 0);
+
+  return {
+    id: eventId,
+    eventId,
+    name: String(payload.name || payload.title || '').trim(),
+    title: String(payload.name || payload.title || '').trim(),
+    date: String(payload.date || '').trim(),
+    venue: String(payload.venue || payload.location || '').trim(),
+    location: String(payload.venue || payload.location || '').trim(),
+    capacity: Number.isFinite(capacity) ? capacity : 0,
+    seatsRemaining: Number.isFinite(seatsRemaining) ? seatsRemaining : 0,
+    status: normalizeEventStatus(String(payload.status || '')),
+    createdAt: payload.createdAt ? String(payload.createdAt) : undefined,
+    ownerId: payload.ownerId ? String(payload.ownerId) : undefined,
+    waitlistEnabled: Boolean(payload.waitlistEnabled),
+    slug: payload.slug ? String(payload.slug) : undefined,
+  };
+}
+
+function normalizeRegistration(payload: Record<string, unknown>): Registration {
+  const eventId = String(payload.eventId || '').trim();
+  const userName = String(payload.userName || payload.name || '').trim();
+  const userEmail = String(payload.userEmail || payload.email || '').trim();
+
+  return {
+    id: String(payload.id || payload.registrationId || '').trim(),
+    registrationId: payload.registrationId ? String(payload.registrationId) : undefined,
+    ticketId: payload.ticketId ? String(payload.ticketId) : undefined,
+    eventId,
+    eventTitle: payload.eventTitle ? String(payload.eventTitle) : undefined,
+    userName,
+    name: userName,
+    userEmail,
+    email: userEmail,
+    ticketCode: payload.ticketCode ? String(payload.ticketCode) : undefined,
+    registeredAt: String(payload.registeredAt || ''),
+    status: (payload.status as Registration['status']) || 'registered',
+  };
+}
+
+function normalizeAdminStats(payload: Record<string, unknown>): AdminStats {
+  const totalRegistrations = Number(payload.totalRegistrations ?? 0);
+  const totalEvents = Number(payload.totalEvents ?? 0);
+  const attendanceRate = Number(payload.attendanceRate ?? 0);
+  const totalCheckIns = Math.max(0, Math.round((totalRegistrations * attendanceRate) / 100));
+
+  return {
+    totalEvents,
+    totalRegistrations,
+    totalCheckIns,
+    capacityUtilization: totalEvents > 0 ? Math.min(100, Math.round((totalRegistrations / totalEvents) * 100)) : 0,
+    recentRegistrations: [],
+    recentCheckIns: [],
+    categoryBreakdown: [],
+  };
+}
+
 function getApiUrl(): string | null {
   const url = process.env.NEXT_PUBLIC_API_URL;
   if (!url || url.trim() === '') {
@@ -51,18 +125,108 @@ function getApiUrl(): string | null {
   return url.replace(/\/$/, '');
 }
 
+function unwrapListResponse<T>(payload: unknown): T {
+  // The deployed API currently returns list payloads as { events: [...] } even though
+  // the OpenAPI contract documents a bare array. Unwrap defensively so the frontend
+  // matches the live service without changing the backend or spec.
+  if (Array.isArray(payload)) {
+    return payload as T;
+  }
+
+  if (payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>;
+    const candidate = record.events ?? record.registrations ?? record.items ?? record.checkIns;
+    if (Array.isArray(candidate)) {
+      return candidate as T;
+    }
+  }
+
+  return payload as T;
+}
+
+function normalizeEventDate(value: string | undefined): string {
+  if (!value) {
+    return '';
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  const isoMatch = /^\d{4}-\d{2}-\d{2}$/.exec(trimmed);
+  if (isoMatch) {
+    return trimmed;
+  }
+
+  const slashMatch = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/.exec(trimmed);
+  if (slashMatch) {
+    const [, month, day, year] = slashMatch;
+    const parsedDate = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+    if (!Number.isNaN(parsedDate.getTime())) {
+      return parsedDate.toISOString().split('T')[0];
+    }
+  }
+
+  return trimmed;
+}
+
+function buildEventApiPayload(eventData: Partial<Event>): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+
+  const name = (eventData.name || eventData.title || '').trim();
+  if (name) {
+    payload.name = name;
+  }
+
+  const normalizedDate = normalizeEventDate(eventData.date);
+  if (normalizedDate) {
+    payload.date = normalizedDate;
+  }
+
+  const venue = (eventData.venue || eventData.location || '').trim();
+  if (venue) {
+    payload.venue = venue;
+  }
+
+  const capacity = Number(eventData.capacity);
+  if (Number.isFinite(capacity) && capacity > 0) {
+    payload.capacity = capacity;
+  }
+
+  return payload;
+}
+
+function getAuthHeader(): Record<string, string> {
+  if (typeof window === 'undefined') {
+    return {};
+  }
+
+  const token = window.localStorage.getItem('kaluna_jwt_token');
+  if (!token || token.trim() === '') {
+    return {};
+  }
+
+  return { Authorization: `Bearer ${token}` };
+}
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const baseUrl = getApiUrl();
   if (!baseUrl) {
     throw new Error('NO_API_URL');
   }
 
-  const headers = {
+  const headers = new Headers({
     'Content-Type': 'application/json',
     ...(options.headers || {}),
-  };
+  });
 
-  const response = await fetch(`${baseUrl}${endpoint}`, {
+  const authHeader = getAuthHeader();
+  if (!headers.has('Authorization') && authHeader.Authorization) {
+    headers.set('Authorization', authHeader.Authorization);
+  }
+
+  const response = await fetch(new URL(endpoint, baseUrl).toString(), {
     ...options,
     headers,
   });
@@ -129,30 +293,32 @@ export const api = {
       }
 
       const queryString = searchParams.toString();
-      const endpoint = `/api/events${queryString ? `?${queryString}` : ''}`;
+      const endpoint = `/api/v1/events${queryString ? `?${queryString}` : ''}`;
+      const payload = await request<unknown>(endpoint);
+      const rawEvents = unwrapListResponse<unknown[]>(payload);
 
-      return await request<Event[]>(endpoint);
+      return (Array.isArray(rawEvents) ? rawEvents : []).map((entry) => normalizeEvent(entry as Record<string, unknown>));
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
       // Fallback to Demo Data
       let results = [...demoStore.events];
       if (params?.category && params.category !== 'All') {
-        results = results.filter((e) => e.category === params.category);
+        results = results.filter((e) => (e as unknown as { category?: EventCategory }).category === params.category);
       }
       if (params?.query) {
         const q = params.query.toLowerCase();
-        results = results.filter(
-          (e) =>
-            e.title.toLowerCase().includes(q) ||
-            e.description.toLowerCase().includes(q) ||
-            e.speaker.name.toLowerCase().includes(q) ||
-            e.tags.some((t) => t.toLowerCase().includes(q))
-        );
+        results = results.filter((e) => {
+          const title = (e as unknown as { title?: string }).title || e.name || '';
+          const description = (e as unknown as { description?: string }).description || '';
+          const speakerName = (e as unknown as { speaker?: { name?: string } }).speaker?.name || '';
+          const tags = (e as unknown as { tags?: string[] }).tags || [];
+          return title.toLowerCase().includes(q) || description.toLowerCase().includes(q) || speakerName.toLowerCase().includes(q) || tags.some((t) => t.toLowerCase().includes(q));
+        });
       }
       if (params?.featured) {
-        results = results.filter((e) => e.featured);
+        results = results.filter((e) => Boolean((e as unknown as { featured?: boolean }).featured));
       }
-      return results;
+      return results.map((event) => normalizeEvent(event as unknown as Record<string, unknown>));
     }
   },
 
@@ -161,7 +327,12 @@ export const api = {
    */
   async getEventBySlug(slug: string): Promise<Event> {
     try {
-      return await request<Event>(`/api/events/slug/${slug}`);
+      const events = await this.getEvents();
+      const event = events.find((entry) => entry.slug === slug || entry.id === slug);
+      if (!event) {
+        throw new KalunaApiError(`Event not found: ${slug}`, 'EVENT_NOT_FOUND', 404);
+      }
+      return event;
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
       const event = demoStore.events.find((e) => e.slug === slug || e.id === slug);
@@ -177,14 +348,15 @@ export const api = {
    */
   async getEventById(id: string): Promise<Event> {
     try {
-      return await request<Event>(`/api/events/${id}`);
+      const payload = await request<unknown>(`/api/v1/events/${id}`);
+      return normalizeEvent(payload as Record<string, unknown>);
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
       const event = demoStore.events.find((e) => e.id === id);
       if (!event) {
         throw new KalunaApiError(`Event with ID '${id}' not found`, 'EVENT_NOT_FOUND', 404);
       }
-      return event;
+      return normalizeEvent(event as unknown as Record<string, unknown>);
     }
   },
 
@@ -202,10 +374,14 @@ export const api = {
 
     try {
       return await request<{ registration: Registration; ticket: Ticket }>(
-        `/api/events/${data.eventId}/register`,
+        `/api/v1/events/${data.eventId}/register`,
         {
           method: 'POST',
-          body: JSON.stringify(data),
+          body: JSON.stringify({
+            name: data.userName,
+            email: data.userEmail,
+            idempotencyKey: `${data.eventId}:${data.userEmail}:${Date.now()}`,
+          }),
         }
       );
     } catch (err) {
@@ -218,8 +394,9 @@ export const api = {
       }
 
       const event = demoStore.events[eventIndex];
+      const registeredCount = Number((event as unknown as { registeredCount?: number }).registeredCount ?? 0);
 
-      if (event.registeredCount >= event.capacity || event.status === 'Sold Out') {
+      if (registeredCount >= event.capacity || event.status === 'Sold Out') {
         throw new KalunaApiError(
           `This event is full. Registration closed.`,
           'EVENT_FULL',
@@ -228,7 +405,7 @@ export const api = {
       }
 
       const duplicate = demoStore.registrations.find(
-        (r) => r.eventId === data.eventId && r.userEmail.toLowerCase() === data.userEmail.toLowerCase()
+        (r) => r.eventId === data.eventId && (r.userEmail || '').toLowerCase() === data.userEmail.toLowerCase()
       );
       if (duplicate) {
         throw new KalunaApiError(
@@ -241,17 +418,17 @@ export const api = {
       // Increment registration count
       const updatedEvent = {
         ...event,
-        registeredCount: event.registeredCount + 1,
+        registeredCount: registeredCount + 1,
         status:
-          event.registeredCount + 1 >= event.capacity
+          registeredCount + 1 >= event.capacity
             ? ('Sold Out' as const)
-            : event.registeredCount + 1 >= event.capacity * 0.8
+            : registeredCount + 1 >= event.capacity * 0.8
             ? ('Limited' as const)
             : event.status,
       };
       demoStore.events[eventIndex] = updatedEvent;
 
-      const ticketCode = `KALUNA-${event.category.toUpperCase().slice(0, 3)}-${Math.floor(
+      const ticketCode = `KALUNA-${String((event as unknown as { category?: string }).category || 'EVT').slice(0, 3).toUpperCase()}-${Math.floor(
         1000 + Math.random() * 9000
       )}`;
 
@@ -270,10 +447,10 @@ export const api = {
         ticketCode,
         registrationId: registration.id,
         eventId: event.id,
-        eventTitle: event.title,
+        eventTitle: event.title || event.name || 'Event',
         eventDate: event.date,
-        eventTime: event.time,
-        location: event.location,
+        eventTime: '18:00 EST',
+        location: event.location || event.venue || 'Kaluna Event Center',
         userName: data.userName,
         userEmail: data.userEmail,
         qrValue: `${ticketCode}:${event.id}:${data.userEmail}`,
@@ -292,7 +469,7 @@ export const api = {
    */
   async getTicket(ticketCode: string): Promise<Ticket> {
     try {
-      return await request<Ticket>(`/api/tickets/${ticketCode}`);
+      return await request<Ticket>(`/api/v1/registrations/${encodeURIComponent(ticketCode)}`);
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
       const ticket = demoStore.tickets[ticketCode.trim().toUpperCase()];
@@ -309,8 +486,9 @@ export const api = {
   async checkInTicket(ticketCode: string): Promise<CheckIn> {
     const code = ticketCode.trim().toUpperCase();
     try {
-      return await request<CheckIn>(`/api/tickets/${code}/check-in`, {
+      return await request<CheckIn>('/api/v1/check-in', {
         method: 'POST',
+        body: JSON.stringify({ ticketId: code }),
       });
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
@@ -381,13 +559,14 @@ export const api = {
    */
   async getAdminStats(): Promise<AdminStats> {
     try {
-      return await request<AdminStats>('/api/admin/stats');
+      const payload = await request<unknown>('/api/v1/analytics');
+      return normalizeAdminStats(payload as Record<string, unknown>);
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
       const totalRegs = demoStore.registrations.length + 320;
       const totalCheckInsCount = demoStore.checkIns.filter((c) => c.status === 'success').length + 180;
       const totalCapacity = demoStore.events.reduce((acc, e) => acc + e.capacity, 0);
-      const totalRegistered = demoStore.events.reduce((acc, e) => acc + e.registeredCount, 0);
+      const totalRegistered = demoStore.events.reduce((acc, e) => acc + Number((e as unknown as { registeredCount?: number }).registeredCount ?? 0), 0);
 
       return {
         totalEvents: demoStore.events.length,
@@ -399,24 +578,24 @@ export const api = {
         categoryBreakdown: [
           {
             category: 'Tech',
-            count: demoStore.events.filter((e) => e.category === 'Tech').length,
+            count: demoStore.events.filter((e) => (e as unknown as { category?: EventCategory }).category === 'Tech').length,
             registrations: demoStore.events
-              .filter((e) => e.category === 'Tech')
-              .reduce((acc, e) => acc + e.registeredCount, 0),
+              .filter((e) => (e as unknown as { category?: EventCategory }).category === 'Tech')
+              .reduce((acc, e) => acc + Number((e as unknown as { registeredCount?: number }).registeredCount ?? 0), 0),
           },
           {
             category: 'Books',
-            count: demoStore.events.filter((e) => e.category === 'Books').length,
+            count: demoStore.events.filter((e) => (e as unknown as { category?: EventCategory }).category === 'Books').length,
             registrations: demoStore.events
-              .filter((e) => e.category === 'Books')
-              .reduce((acc, e) => acc + e.registeredCount, 0),
+              .filter((e) => (e as unknown as { category?: EventCategory }).category === 'Books')
+              .reduce((acc, e) => acc + Number((e as unknown as { registeredCount?: number }).registeredCount ?? 0), 0),
           },
           {
             category: 'Workshop',
-            count: demoStore.events.filter((e) => e.category === 'Workshop').length,
+            count: demoStore.events.filter((e) => (e as unknown as { category?: EventCategory }).category === 'Workshop').length,
             registrations: demoStore.events
-              .filter((e) => e.category === 'Workshop')
-              .reduce((acc, e) => acc + e.registeredCount, 0),
+              .filter((e) => (e as unknown as { category?: EventCategory }).category === 'Workshop')
+              .reduce((acc, e) => acc + Number((e as unknown as { registeredCount?: number }).registeredCount ?? 0), 0),
           },
         ],
       };
@@ -430,20 +609,48 @@ export const api = {
     if (!username || !password) {
       throw new KalunaApiError('Username and password are required', 'VALIDATION_ERROR', 400);
     }
+
     try {
-      return await request<{ token: string; username: string }>('/api/admin/login', {
-        method: 'POST',
-        body: JSON.stringify({ username, password }),
+      const pool = new CognitoUserPool({
+        UserPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us-east-1_60NhNgHlz',
+        ClientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '481citp6rarsut793ekot3mjls',
+      });
+
+      const user = new CognitoUser({
+        Username: username,
+        Pool: pool,
+      });
+
+      user.setAuthenticationFlowType('USER_PASSWORD_AUTH');
+
+      const authenticationDetails = new AuthenticationDetails({
+        Username: username,
+        Password: password,
+      });
+
+      return await new Promise<{ token: string; username: string }>((resolve, reject) => {
+        user.authenticateUser(authenticationDetails, {
+          onSuccess: (result) => {
+            resolve({
+              token: result.getIdToken().getJwtToken(),
+              username,
+            });
+          },
+          onFailure: (err) => {
+            reject(new KalunaApiError(err.message || 'Invalid credentials', 'UNAUTHORIZED', 401));
+          },
+          newPasswordRequired: () => {
+            reject(new KalunaApiError('A new password is required', 'UNAUTHORIZED', 401));
+          },
+        });
       });
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
-      if (password === 'invalid' || username === 'invalid') {
-        throw new KalunaApiError('Invalid credentials', 'UNAUTHORIZED', 401);
-      }
-      return {
-        token: `demo-jwt-token-${Date.now()}`,
-        username,
-      };
+      throw new KalunaApiError(
+        (err as Error)?.message || 'Authentication failed',
+        'UNAUTHORIZED',
+        401
+      );
     }
   },
 
@@ -451,36 +658,32 @@ export const api = {
    * Create new Event (Admin)
    */
   async createEvent(eventData: Partial<Event>): Promise<Event> {
+    const payload = buildEventApiPayload(eventData);
+
     try {
-      return await request<Event>('/api/events', {
+      const created = await request<unknown>('/api/v1/events', {
         method: 'POST',
-        body: JSON.stringify(eventData),
+        body: JSON.stringify(payload),
       });
+      return normalizeEvent(created as Record<string, unknown>);
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
 
       const newEvent: Event = {
         id: `evt-${Date.now()}`,
-        title: eventData.title || 'Untitled Event',
-        slug: eventData.slug || (eventData.title ? eventData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : `event-${Date.now()}`),
-        description: eventData.description || '',
-        shortDescription: eventData.shortDescription || eventData.description || '',
-        category: eventData.category || 'Tech',
+        eventId: `evt-${Date.now()}`,
+        name: eventData.name || eventData.title || 'Untitled Event',
+        title: eventData.name || eventData.title || 'Untitled Event',
         date: eventData.date || new Date().toISOString().split('T')[0],
-        time: eventData.time || '18:00 - 20:00 EST',
-        location: eventData.location || 'Kaluna Main Stage',
-        speaker: eventData.speaker || { name: 'Kaluna Team', role: 'Host' },
+        venue: eventData.venue || eventData.location || 'Kaluna Main Stage',
+        location: eventData.venue || eventData.location || 'Kaluna Main Stage',
         capacity: Number(eventData.capacity) || 100,
-        registeredCount: 0,
-        price: Number(eventData.price) || 0,
-        imageUrl: eventData.imageUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
-        tags: eventData.tags || ['Event'],
-        featured: eventData.featured || false,
+        seatsRemaining: Number(eventData.capacity) || 100,
         status: 'Available',
         createdAt: new Date().toISOString(),
       };
 
-      demoStore.events.unshift(newEvent);
+      demoStore.events.unshift(newEvent as unknown as (typeof demoStore.events)[number]);
       return newEvent;
     }
   },
@@ -489,11 +692,14 @@ export const api = {
    * Update Event (Admin)
    */
   async updateEvent(id: string, eventData: Partial<Event>): Promise<Event> {
+    const payload = buildEventApiPayload(eventData);
+
     try {
-      return await request<Event>(`/api/events/${id}`, {
+      const updated = await request<unknown>(`/api/v1/events/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(eventData),
+        body: JSON.stringify(payload),
       });
+      return normalizeEvent(updated as Record<string, unknown>);
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
 
@@ -504,13 +710,19 @@ export const api = {
 
       const existing = demoStore.events[idx];
       const updated: Event = {
-        ...existing,
-        ...eventData,
+        ...normalizeEvent(existing as unknown as Record<string, unknown>),
+        id,
+        eventId: id,
+        name: eventData.name || eventData.title || existing.title || existing.name || '',
+        title: eventData.name || eventData.title || existing.title || existing.name || '',
+        date: eventData.date || existing.date,
+        venue: eventData.venue || eventData.location || existing.location || existing.venue || '',
+        location: eventData.venue || eventData.location || existing.location || existing.venue || '',
         capacity: eventData.capacity !== undefined ? Number(eventData.capacity) : existing.capacity,
-        price: eventData.price !== undefined ? Number(eventData.price) : existing.price,
+        seatsRemaining: eventData.capacity !== undefined ? Number(eventData.capacity) : existing.capacity,
       };
 
-      demoStore.events[idx] = updated;
+      demoStore.events[idx] = updated as unknown as (typeof demoStore.events)[number];
       return updated;
     }
   },
@@ -518,12 +730,20 @@ export const api = {
   /**
    * Get Registrations list (Admin / CSV)
    */
-  async getRegistrations(): Promise<Registration[]> {
+  async getRegistrations(eventId?: string): Promise<Registration[]> {
+    const targetEventId = eventId || demoStore.events[0]?.id;
+
+    if (!targetEventId) {
+      return [];
+    }
+
     try {
-      return await request<Registration[]>('/api/admin/registrations');
+      const payload = await request<unknown>(`/api/v1/events/${encodeURIComponent(targetEventId)}/registrations`);
+      const registrations = unwrapListResponse<unknown[]>(payload);
+      return (Array.isArray(registrations) ? registrations : []).map((entry) => normalizeRegistration(entry as Record<string, unknown>));
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
-      return demoStore.registrations;
+      return demoStore.registrations.filter((registration) => registration.eventId === targetEventId);
     }
   },
 };

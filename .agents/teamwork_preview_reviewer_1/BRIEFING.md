@@ -1,65 +1,52 @@
-# BRIEFING — 2026-08-05T17:04:15Z
+# BRIEFING — 2026-08-06T14:11:30Z
 
 ## Mission
-Review backend Python/Go code and Terraform IaC files for correctness, completeness, quality, security, and integrity violations, and verify all test suites.
+Perform comprehensive code quality, architecture, and API integration review of the Kaluna frontend codebase.
 
 ## 🔒 My Identity
-- Archetype: reviewer & critic
+- Archetype: teamwork_preview_reviewer_1
 - Roles: reviewer, critic
 - Working directory: d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_reviewer_1
-- Original parent: 60236068-5e5e-4fec-bc12-1ea0e3e386b4
-- Milestone: review_backend_iac
+- Original parent: 3bd4f89f-6dc5-4c7e-b3e5-548d42b8ce01
+- Milestone: Frontend Review
 - Instance: 1 of 1
 
 ## 🔒 Key Constraints
-- Review-only — do NOT modify implementation code
-- Code-only network restrictions (no external HTTP/web access)
-- Check integrity violations (hardcoded test results, facade implementations, bypasses, self-certifying work)
+- Review-only — do NOT modify implementation code unless fixing file write rules for agent folder
+- Verify 9 required routes exist: Landing, Event Detail, Registration Form, Success, Ticket Lookup, Admin Login, Admin Dashboard, Create/Edit Event, 404
+- Verify dynamic routes export `generateStaticParams()`
+- Verify `NEXT_PUBLIC_API_URL` usage and `errorCode` parsing
+- Execute `npm run build` in `frontend` and check `out/` output exit code 0
+- Adversarial check for integrity violations, dummy implementations, missing error handlings
 
 ## Current Parent
-- Conversation ID: 60236068-5e5e-4fec-bc12-1ea0e3e386b4
-- Updated: 2026-08-05T17:04:15Z
+- Conversation ID: 3bd4f89f-6dc5-4c7e-b3e5-548d42b8ce01
+- Updated: 2026-08-06T14:11:30Z
 
 ## Review Scope
-- **Files reviewed**:
-  - `services/events/app.py`
-  - `services/registrations/app.py`
-  - `services/feedback/app.py`
-  - `services/reminders/app.py`
-  - `services/checkin/main.go`
-  - `terraform/environments/dev/main.tf`
-  - `terraform/environments/staging/main.tf`
-  - `terraform/environments/prod/main.tf`
-  - `openapi.yaml`
-- **Specific bug fixes verified**:
-  - Route precedence (verified)
-  - Ghost seat leak (verified)
-  - 404 status code (verified)
-  - Email normalization (verified)
-  - Go safe type assertions (verified)
-  - Terraform parity (verified)
+- **Files to review**: `frontend/src/` components, pages, lib, app router
+- **Interface contracts**: PROJECT.md / SCOPE.md
+- **Review criteria**: correctness, architecture, API integration, static export compatibility, build status
+
+## Key Decisions Made
+- Confirmed all 9 routes exist and are properly structured with App Router conventions.
+- Confirmed dynamic routes (`events/[id]` and `admin/events/[id]/edit`) export `generateStaticParams()`.
+- Confirmed `NEXT_PUBLIC_API_URL` configuration and `errorCode` parsing logic in `src/lib/api.ts`.
+- Verdict issued: **REQUEST_CHANGES** due to `npm run build` failure in original codebase (`searchParams` null check & Next.js static pages manifest ENOENT).
 
 ## Review Checklist
-- **Items reviewed**: Backend Python services, Go service, Terraform dev/staging/prod IaC, OpenAPI spec, unit test suite.
-- **Verdict**: **APPROVE**
-- **Unverified claims**: None. All claims independently verified.
+- **Items reviewed**: All 9 routes, Next.js config, API client layer, UI component tree, dynamic static params, production build output.
+- **Verdict**: REQUEST_CHANGES
+- **Unverified claims**: Production build exit code 0 on unmodified codebase (failed due to TypeScript error in `success/page.tsx` and missing `src/pages` directory).
 
 ## Attack Surface
 - **Hypotheses tested**:
-  - Unsafe Go type assertions -> Tested with `go test -v ./...` (`TestSafeTypeAssertions`), pass.
-  - Ghost seat leak on cancelling waitlisted tickets -> Tested in `services/registrations`, pass.
-  - Incorrect route routing for `/api/v1/events/{eventId}/registrations` -> Tested in `services/events`, pass.
-  - Casing mismatches on email -> Verified `.strip().lower()`, pass.
-- **Vulnerabilities found**: None.
-- **Untested angles**: None within scope.
-
-## Key Decisions Made
-- Final verdict issued: APPROVE.
-- Detailed report written to `report.md`.
-- Handoff report written to `handoff.md`.
+  - Does `npm run build` succeed out of the box? -> FAILED (TypeScript type error & Next.js pages-manifest ENOENT).
+  - Are dynamic routes static export ready? -> PASSED (`generateStaticParams` exported).
+  - Does API client handle missing `NEXT_PUBLIC_API_URL`? -> PASSED (Graceful fallback to demo store).
+  - Is `errorCode` parsed from response JSON? -> PASSED (Parsed and mapped).
 
 ## Artifact Index
-- `d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_reviewer_1\ORIGINAL_REQUEST.md` — Original prompt text
-- `d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_reviewer_1\BRIEFING.md` — Persistent working state
-- `d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_reviewer_1\report.md` — Detailed review report
-- `d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_reviewer_1\handoff.md` — Handoff protocol document
+- `.agents/teamwork_preview_reviewer_1/ORIGINAL_REQUEST.md` — Original request text
+- `.agents/teamwork_preview_reviewer_1/BRIEFING.md` — Agent briefing state
+- `.agents/teamwork_preview_reviewer_1/handoff.md` — Complete review & audit report

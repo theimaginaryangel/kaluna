@@ -84,10 +84,10 @@ export function EditEventClient({ id }: { id: string }) {
               <span>Event Editor</span>
             </div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight pt-1">
-              Edit Event: {event.title}
+              Edit Event: {event.name || event.title}
             </h1>
             <p className="text-xs text-slate-400">
-              Update event details, speaker info, price, or maximum venue capacity.
+              Update the event name, date, venue, or maximum capacity.
             </p>
           </div>
 

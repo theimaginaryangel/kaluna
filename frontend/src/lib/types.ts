@@ -1,42 +1,37 @@
 export type EventCategory = 'Tech' | 'Books' | 'Workshop';
 
-export type EventStatus = 'Available' | 'Limited' | 'Sold Out';
+export type EventStatus = 'Available' | 'Limited' | 'Sold Out' | 'available' | 'limited' | 'sold_out';
 
 export interface Event {
   id: string;
-  title: string;
-  slug: string;
-  description: string;
-  shortDescription?: string;
-  category: EventCategory;
+  eventId?: string;
+  name: string;
+  title?: string;
   date: string;
-  time: string;
-  location: string;
-  virtualUrl?: string;
-  speaker: {
-    name: string;
-    role: string;
-    avatarUrl?: string;
-  };
+  venue?: string;
+  location?: string;
   capacity: number;
-  registeredCount: number;
-  price: number;
-  imageUrl: string;
-  tags: string[];
-  featured?: boolean;
+  seatsRemaining: number;
   status: EventStatus;
   createdAt?: string;
+  ownerId?: string;
+  waitlistEnabled?: boolean;
+  slug?: string;
 }
 
 export interface Registration {
   id: string;
+  registrationId?: string;
+  ticketId?: string;
   eventId: string;
   eventTitle?: string;
-  userName: string;
-  userEmail: string;
-  ticketCode: string;
+  userName?: string;
+  name?: string;
+  userEmail?: string;
+  email?: string;
+  ticketCode?: string;
   registeredAt: string;
-  status: 'confirmed' | 'cancelled' | 'checked_in';
+  status: 'confirmed' | 'cancelled' | 'checked_in' | 'registered' | 'available';
 }
 
 export interface Ticket {

@@ -27,7 +27,7 @@ export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
   const [apiError, setApiError] = React.useState<ApiError | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const remainingSpots = Math.max(0, event.capacity - event.registeredCount);
+  const remainingSpots = Math.max(0, event.seatsRemaining);
 
   const validateForm = (): boolean => {
     let valid = true;
@@ -72,7 +72,7 @@ export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
 
     try {
       const result = await api.registerForEvent({
-        eventId: event.id,
+        eventId: event.id || event.eventId || '',
         userName: userName.trim(),
         userEmail: userEmail.trim(),
       });
@@ -83,7 +83,7 @@ export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
 
       const queryParams = new URLSearchParams({
         code: result.ticket.ticketCode,
-        eventId: event.id,
+        eventId: event.id || event.eventId || '',
       });
 
       router.push(`/success/?${queryParams.toString()}`);
@@ -111,7 +111,7 @@ export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
       case 'EVENT_FULL':
         return 'This event has reached maximum capacity. No more registrations are accepted.';
       case 'DUPLICATE_REGISTRATION':
-        return `You have already registered for "${event.title}" with email address ${userEmail}. Check your inbox or pass lookup.`;
+        return `You have already registered for "${event.name || event.title}" with email address ${userEmail}. Check your inbox or pass lookup.`;
       case 'VALIDATION_ERROR':
         return 'Invalid form data provided. Please check all fields and try again.';
       case 'EVENT_NOT_FOUND':

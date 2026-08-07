@@ -1,58 +1,60 @@
-# BRIEFING — 2026-08-05T16:41:30Z
+# BRIEFING — 2026-08-06T13:53:00Z
 
 ## Mission
-Milestone 1 Implementation: Infrastructure, API Gateway routing fix, OpenAPI spec alignment, Terraform environment parity, and cross-platform build script compatibility.
+Initialize Next.js 14 App Router static export frontend project setup in `d:\New folder (6)\kaluna\kaluna\frontend`.
 
 ## 🔒 My Identity
 - Archetype: implementer / qa / specialist
 - Roles: implementer, qa, specialist
 - Working directory: d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_worker_m1
-- Original parent: 60236068-5e5e-4fec-bc12-1ea0e3e386b4
-- Milestone: Milestone 1
+- Original parent: a710c097-bdd6-43b3-b651-dbd601fd4d5e
+- Milestone: Milestone 1 - Next.js 14 App Router Setup
 
 ## 🔒 Key Constraints
-- CODE_ONLY network mode.
 - Minimal change principle.
-- Absolute integrity mandate: no hardcoded test results, facade implementations, or cheating.
+- Strict Kaluna design system rules: `#FF2D87` reserved for interactive/motion states.
+- Clean static export build with `npm run build` outputting to `out/` with exit code 0.
+- Honest verification, no fake test results.
 
 ## Current Parent
-- Conversation ID: 60236068-5e5e-4fec-bc12-1ea0e3e386b4
-- Updated: 2026-08-05T16:41:30Z
+- Conversation ID: a710c097-bdd6-43b3-b651-dbd601fd4d5e
+- Updated: 2026-08-06T13:53:00Z
 
 ## Task Summary
-- **What to build**: Fix route precedence in `services/events/app.py`, update `openapi.yaml`, achieve full terraform parity across dev/staging/prod environments, fix cross-platform build script compatibility in terraform files, update `.gitignore`, run unit tests.
-- **Success criteria**: All routes function correctly, openapi.yaml reflects API schema accurately, staging/prod main.tf have reminders/feedback Lambdas and cron schedules, cross-platform go build works in terraform, tests pass.
-- **Interface contracts**: openapi.yaml, services/events/app.py
-- **Code layout**: Root repo `d:\New folder (6)\kaluna\kaluna\`
+- **What to build**: Next.js 14 frontend setup with static export, Tailwind CSS design system, Framer Motion support, TypeScript alias, minimal layout/page.
+- **Success criteria**: Clean `npm install`, clean `npm run build` resulting in `out/` folder with exit code 0, handoff report, message to parent.
+- **Interface contracts**: `frontend_setup_plan.md` & `design_system_spec.md`
+- **Code layout**: `frontend/`
 
 ## Key Decisions Made
-- Reordered elif route checks in `services/events/app.py` so `/registrations` is checked before `/events/{eventId}`.
-- Updated `openapi.yaml` GET /events response to `{ "events": [...], "nextCursor": "..." }` and added `format=csv` parameter and `text/csv` response to GET /events/{eventId}/registrations.
-- Added `reminders` and `feedback` services, IAM roles, EventBridge schedules (`cron(0 10 * * ? *)` and `cron(0 14 * * ? *)`), and observability monitoring to `staging/main.tf` and `prod/main.tf`.
-- Updated `null_resource.build_checkin` in dev/staging/prod main.tf to use `working_dir` and `CGO_ENABLED=0 GOOS=linux GOARCH=amd64`.
-- Updated `.gitignore` with `.terraform/`, `terraform.tfstate`, `terraform.tfstate.backup`, and `*.zip`.
-- Added unit tests for registrations route precedence and CSV export in `services/events/tests/test_app.py`.
+- Implemented `package.json`, `next.config.mjs` (`output: 'export'`, `images: { unoptimized: true }`, `trailingSlash: true`), `tsconfig.json` (`@/*` -> `./src/*`), `tailwind.config.js` (Kaluna hot pink `#FF2D87`, dark surface palette, custom easings, keyframe animations, shadows), `postcss.config.mjs`, `.gitignore`, `globals.css`, `layout.tsx`, `page.tsx`, and `utils.ts`.
+- Cleaned corrupted node_modules before executing clean `npm install` and `npm run build`.
 
 ## Change Tracker
 - **Files modified**:
-  - `services/events/app.py`
-  - `openapi.yaml`
-  - `terraform/environments/dev/main.tf`
-  - `terraform/environments/staging/main.tf`
-  - `terraform/environments/prod/main.tf`
-  - `.gitignore`
-  - `services/events/tests/test_app.py`
-- **Build status**: PASS (Go tests pass)
+  - `frontend/package.json` — dependencies & devDependencies
+  - `frontend/next.config.mjs` — static export configuration
+  - `frontend/tsconfig.json` — compiler options & path alias `@/*`
+  - `frontend/tailwind.config.js` — design tokens, custom easings & keyframes
+  - `frontend/postcss.config.mjs` — postcss tailwind & autoprefixer setup
+  - `frontend/.gitignore` — ignore rules for node_modules, .next, out
+  - `frontend/src/app/globals.css` — tailwind base/components/utilities & interactive pink classes
+  - `frontend/src/app/layout.tsx` — root layout component with dark background
+  - `frontend/src/app/page.tsx` — minimal starter home page component
+  - `frontend/src/lib/utils.ts` — `cn()` helper utility function
+- **Build status**: PASS (Exit code 0, static export written to `frontend/out`)
 - **Pending issues**: None
 
 ## Quality Status
-- **Build/test result**: All unit tests passing cleanly (Go checkin service: 4/4 passed, Python events service: 10/10 passed).
-- **Lint status**: Clean
-- **Tests added/modified**: `test_list_event_registrations_route_precedence`, `test_list_event_registrations_csv_format` in `services/events/tests/test_app.py`.
+- **Build/test result**: PASS
+- **Lint status**: 0
+- **Tests added/modified**: Static export build verified
 
 ## Loaded Skills
-- None
+None
 
 ## Artifact Index
-- `.agents/teamwork_preview_worker_m1/changes.md` — Detailed report
-- `.agents/teamwork_preview_worker_m1/handoff.md` — Handoff report
+- `.agents/teamwork_preview_worker_m1/ORIGINAL_REQUEST.md` — Initial request log
+- `.agents/teamwork_preview_worker_m1/BRIEFING.md` — Current briefing
+- `.agents/teamwork_preview_worker_m1/progress.md` — Progress log
+- `.agents/teamwork_preview_worker_m1/handoff.md` — Final handoff report

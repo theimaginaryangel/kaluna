@@ -1,0 +1,718 @@
+{
+  "apis": {
+    "d8altyy954": {
+      "name": "kaluna-dev-api",
+      "created": "2026-08-05 18:46:25+00:00",
+      "endpoint": "https://d8altyy954.execute-api.us-east-1.amazonaws.com",
+      "protocol": "HTTP",
+      "routes": [],
+      "integrations": [],
+      "stages": [
+        {
+          "AutoDeploy": true,
+          "CreatedDate": "2026-08-05 18:46:25+00:00",
+          "DefaultRouteSettings": {
+            "DetailedMetricsEnabled": true,
+            "ThrottlingBurstLimit": 100,
+            "ThrottlingRateLimit": 50.0
+          },
+          "LastDeploymentStatusMessage": "Deployment attempt failed: Unable to deploy API because no valid routes exist in this API",
+          "LastUpdatedDate": "2026-08-05 18:46:26+00:00",
+          "RouteSettings": {},
+          "StageName": "$default",
+          "StageVariables": {},
+          "Tags": {
+            "Environment": "dev"
+          }
+        }
+      ],
+      "authorizers": [
+        {
+          "AuthorizerId": "4vxqai",
+          "AuthorizerType": "JWT",
+          "IdentitySource": [
+            "$request.header.Authorization"
+          ],
+          "JwtConfiguration": {
+            "Audience": [
+              "6t4a27efmi2odhl8ael8s45tkl"
+            ],
+            "Issuer": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_LuDVpr6TH"
+          },
+          "Name": "cognito-authorizer"
+        }
+      ]
+    },
+    "fvbwfweun7": {
+      "name": "kaluna-dev-api",
+      "created": "2026-08-05 18:45:22+00:00",
+      "endpoint": "https://fvbwfweun7.execute-api.us-east-1.amazonaws.com",
+      "protocol": "HTTP",
+      "routes": [],
+      "integrations": [],
+      "stages": [
+        {
+          "AutoDeploy": true,
+          "CreatedDate": "2026-08-05 18:45:23+00:00",
+          "DefaultRouteSettings": {
+            "DetailedMetricsEnabled": true,
+            "ThrottlingBurstLimit": 100,
+            "ThrottlingRateLimit": 50.0
+          },
+          "LastDeploymentStatusMessage": "Deployment attempt failed: Unable to deploy API because no valid routes exist in this API",
+          "LastUpdatedDate": "2026-08-05 18:45:24+00:00",
+          "RouteSettings": {},
+          "StageName": "$default",
+          "StageVariables": {},
+          "Tags": {
+            "Environment": "dev"
+          }
+        }
+      ],
+      "authorizers": [
+        {
+          "AuthorizerId": "1g25o0",
+          "AuthorizerType": "JWT",
+          "IdentitySource": [
+            "$request.header.Authorization"
+          ],
+          "JwtConfiguration": {
+            "Audience": [
+              "3hrhn6l1kpsurumpel48h9jrob"
+            ],
+            "Issuer": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_cBxUz6nXq"
+          },
+          "Name": "cognito-authorizer"
+        }
+      ]
+    },
+    "gzwmi3wu12": {
+      "name": "kaluna-dev-api",
+      "created": "2026-08-05 13:18:45+00:00",
+      "endpoint": "https://gzwmi3wu12.execute-api.us-east-1.amazonaws.com",
+      "protocol": "HTTP",
+      "routes": [
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "JWT",
+          "AuthorizerId": "bq8srl",
+          "RouteId": "0ugfcf2",
+          "RouteKey": "GET /api/v1/events/{eventId}/registrations",
+          "Target": "integrations/2217unm"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "NONE",
+          "RouteId": "4fvwk58",
+          "RouteKey": "GET /api/v1/registrations/{ticketId}",
+          "Target": "integrations/xw5lbyq"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "JWT",
+          "AuthorizerId": "bq8srl",
+          "RouteId": "915ggw4",
+          "RouteKey": "GET /api/v1/analytics",
+          "Target": "integrations/2217unm"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "JWT",
+          "AuthorizerId": "bq8srl",
+          "RouteId": "91a8r1c",
+          "RouteKey": "PUT /api/v1/events/{eventId}",
+          "Target": "integrations/2217unm"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "JWT",
+          "AuthorizerId": "bq8srl",
+          "RouteId": "cp92xul",
+          "RouteKey": "GET /api/v1/events/{eventId}/check-ins",
+          "Target": "integrations/eqo1469"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "NONE",
+          "RouteId": "eti1re8",
+          "RouteKey": "POST /api/v1/check-in",
+          "Target": "integrations/eqo1469"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "JWT",
+          "AuthorizerId": "bq8srl",
+          "RouteId": "gajmpgr",
+          "RouteKey": "POST /api/v1/events",
+          "Target": "integrations/2217unm"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "JWT",
+          "AuthorizerId": "bq8srl",
+          "RouteId": "j1thxz1",
+          "RouteKey": "DELETE /api/v1/events/{eventId}",
+          "Target": "integrations/2217unm"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "NONE",
+          "RouteId": "ofx3v80",
+          "RouteKey": "GET /api/v1/events/{eventId}",
+          "Target": "integrations/2217unm"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "NONE",
+          "RouteId": "rkhtvdd",
+          "RouteKey": "GET /api/v1/events",
+          "Target": "integrations/2217unm"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "NONE",
+          "RouteId": "s9c0nve",
+          "RouteKey": "POST /api/v1/events/{eventId}/register",
+          "Target": "integrations/xw5lbyq"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "NONE",
+          "RouteId": "vfobq6c",
+          "RouteKey": "POST /api/v1/registrations/{ticketId}/cancel",
+          "Target": "integrations/xw5lbyq"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "NONE",
+          "RouteId": "wxyft66",
+          "RouteKey": "GET /api/v1/health",
+          "Target": "integrations/2217unm"
+        }
+      ],
+      "integrations": [
+        {
+          "ConnectionType": "INTERNET",
+          "IntegrationId": "2217unm",
+          "IntegrationMethod": "POST",
+          "IntegrationType": "AWS_PROXY",
+          "IntegrationUri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:496795891920:function:kaluna-dev-events/invocations",
+          "PayloadFormatVersion": "1.0",
+          "TimeoutInMillis": 30000
+        },
+        {
+          "ConnectionType": "INTERNET",
+          "IntegrationId": "eqo1469",
+          "IntegrationMethod": "POST",
+          "IntegrationType": "AWS_PROXY",
+          "IntegrationUri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:496795891920:function:kaluna-dev-checkin/invocations",
+          "PayloadFormatVersion": "1.0",
+          "TimeoutInMillis": 30000
+        },
+        {
+          "ConnectionType": "INTERNET",
+          "IntegrationId": "xw5lbyq",
+          "IntegrationMethod": "POST",
+          "IntegrationType": "AWS_PROXY",
+          "IntegrationUri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:496795891920:function:kaluna-dev-registrations/invocations",
+          "PayloadFormatVersion": "1.0",
+          "TimeoutInMillis": 30000
+        }
+      ],
+      "stages": [
+        {
+          "AutoDeploy": true,
+          "CreatedDate": "2026-08-05 13:49:00+00:00",
+          "DefaultRouteSettings": {
+            "DetailedMetricsEnabled": true,
+            "ThrottlingBurstLimit": 100,
+            "ThrottlingRateLimit": 50.0
+          },
+          "DeploymentId": "89a3mt",
+          "LastDeploymentStatusMessage": "Successfully deployed stage with deployment ID '89a3mt'",
+          "LastUpdatedDate": "2026-08-05 15:47:26+00:00",
+          "RouteSettings": {},
+          "StageName": "$default",
+          "StageVariables": {},
+          "Tags": {
+            "Environment": "dev"
+          }
+        }
+      ],
+      "authorizers": [
+        {
+          "AuthorizerId": "bq8srl",
+          "AuthorizerType": "JWT",
+          "IdentitySource": [
+            "$request.header.Authorization"
+          ],
+          "JwtConfiguration": {
+            "Audience": [
+              "481citp6rarsut793ekot3mjls"
+            ],
+            "Issuer": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_60NhNgHlz"
+          },
+          "Name": "cognito-authorizer"
+        }
+      ]
+    },
+    "o275c5g9h5": {
+      "name": "kaluna-prod-api",
+      "created": "2026-08-05 22:15:16+00:00",
+      "endpoint": "https://o275c5g9h5.execute-api.us-east-1.amazonaws.com",
+      "protocol": "HTTP",
+      "routes": [
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "NONE",
+          "RouteId": "2seqzff",
+          "RouteKey": "POST /api/v1/registrations/{ticketId}/cancel",
+          "Target": "integrations/qsl6xko"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "JWT",
+          "AuthorizerId": "bh1hyy",
+          "RouteId": "31binu2",
+          "RouteKey": "POST /api/v1/events",
+          "Target": "integrations/kebcy1h"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "NONE",
+          "RouteId": "4g3ehqp",
+          "RouteKey": "GET /api/v1/health",
+          "Target": "integrations/kebcy1h"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "NONE",
+          "RouteId": "85h96dr",
+          "RouteKey": "POST /api/v1/events/{eventId}/register",
+          "Target": "integrations/qsl6xko"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "JWT",
+          "AuthorizerId": "bh1hyy",
+          "RouteId": "d4isd0t",
+          "RouteKey": "DELETE /api/v1/events/{eventId}",
+          "Target": "integrations/kebcy1h"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "NONE",
+          "RouteId": "e4c8iih",
+          "RouteKey": "POST /api/v1/check-in",
+          "Target": "integrations/iwwz4fk"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "NONE",
+          "RouteId": "e6l1lee",
+          "RouteKey": "GET /api/v1/events/{eventId}",
+          "Target": "integrations/kebcy1h"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "JWT",
+          "AuthorizerId": "bh1hyy",
+          "RouteId": "ecs45h5",
+          "RouteKey": "GET /api/v1/events/{eventId}/registrations",
+          "Target": "integrations/kebcy1h"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "NONE",
+          "RouteId": "il7reh6",
+          "RouteKey": "GET /api/v1/registrations/{ticketId}",
+          "Target": "integrations/qsl6xko"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "NONE",
+          "RouteId": "pz5qkd6",
+          "RouteKey": "GET /api/v1/events",
+          "Target": "integrations/kebcy1h"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "JWT",
+          "AuthorizerId": "bh1hyy",
+          "RouteId": "weuel63",
+          "RouteKey": "PUT /api/v1/events/{eventId}",
+          "Target": "integrations/kebcy1h"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "JWT",
+          "AuthorizerId": "bh1hyy",
+          "RouteId": "ypos2jq",
+          "RouteKey": "GET /api/v1/analytics",
+          "Target": "integrations/kebcy1h"
+        },
+        {
+          "ApiKeyRequired": false,
+          "AuthorizationType": "JWT",
+          "AuthorizerId": "bh1hyy",
+          "RouteId": "ythf92c",
+          "RouteKey": "GET /api/v1/events/{eventId}/check-ins",
+          "Target": "integrations/iwwz4fk"
+        }
+      ],
+      "integrations": [
+        {
+          "ConnectionType": "INTERNET",
+          "IntegrationId": "iwwz4fk",
+          "IntegrationMethod": "POST",
+          "IntegrationType": "AWS_PROXY",
+          "IntegrationUri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:496795891920:function:kaluna-prod-checkin/invocations",
+          "PayloadFormatVersion": "1.0",
+          "TimeoutInMillis": 30000
+        },
+        {
+          "ConnectionType": "INTERNET",
+          "IntegrationId": "kebcy1h",
+          "IntegrationMethod": "POST",
+          "IntegrationType": "AWS_PROXY",
+          "IntegrationUri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:496795891920:function:kaluna-prod-events/invocations",
+          "PayloadFormatVersion": "1.0",
+          "TimeoutInMillis": 30000
+        },
+        {
+          "ConnectionType": "INTERNET",
+          "IntegrationId": "qsl6xko",
+          "IntegrationMethod": "POST",
+          "IntegrationType": "AWS_PROXY",
+          "IntegrationUri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:496795891920:function:kaluna-prod-registrations/invocations",
+          "PayloadFormatVersion": "1.0",
+          "TimeoutInMillis": 30000
+        }
+      ],
+      "stages": [
+        {
+          "AutoDeploy": true,
+          "CreatedDate": "2026-08-05 22:15:16+00:00",
+          "DefaultRouteSettings": {
+            "DetailedMetricsEnabled": true,
+            "ThrottlingBurstLimit": 100,
+            "ThrottlingRateLimit": 50.0
+          },
+          "DeploymentId": "5uxxtj",
+          "LastDeploymentStatusMessage": "Successfully deployed stage with deployment ID '5uxxtj'",
+          "LastUpdatedDate": "2026-08-05 22:16:00+00:00",
+          "RouteSettings": {},
+          "StageName": "$default",
+          "StageVariables": {},
+          "Tags": {
+            "Environment": "prod"
+          }
+        }
+      ],
+      "authorizers": [
+        {
+          "AuthorizerId": "bh1hyy",
+          "AuthorizerType": "JWT",
+          "IdentitySource": [
+            "$request.header.Authorization"
+          ],
+          "JwtConfiguration": {
+            "Audience": [
+              "1farfjsk0i1c2qi15d4rde52ka"
+            ],
+            "Issuer": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_pZj77jJZE"
+          },
+          "Name": "cognito-authorizer"
+        }
+      ]
+    },
+    "pcpooeplr8": {
+      "name": "kaluna-dev-api",
+      "created": "2026-08-05 18:46:49+00:00",
+      "endpoint": "https://pcpooeplr8.execute-api.us-east-1.amazonaws.com",
+      "protocol": "HTTP",
+      "routes": [],
+      "integrations": [],
+      "stages": [
+        {
+          "AutoDeploy": true,
+          "CreatedDate": "2026-08-05 18:46:49+00:00",
+          "DefaultRouteSettings": {
+            "DetailedMetricsEnabled": true,
+            "ThrottlingBurstLimit": 100,
+            "ThrottlingRateLimit": 50.0
+          },
+          "LastDeploymentStatusMessage": "Deployment attempt failed: Unable to deploy API because no valid routes exist in this API",
+          "LastUpdatedDate": "2026-08-05 18:46:51+00:00",
+          "RouteSettings": {},
+          "StageName": "$default",
+          "StageVariables": {},
+          "Tags": {
+            "Environment": "dev"
+          }
+        }
+      ],
+      "authorizers": [
+        {
+          "AuthorizerId": "7wzq36",
+          "AuthorizerType": "JWT",
+          "IdentitySource": [
+            "$request.header.Authorization"
+          ],
+          "JwtConfiguration": {
+            "Audience": [
+              "6qhdq417id83e2qp787fg8kpmo"
+            ],
+            "Issuer": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_b1kjxrbWn"
+          },
+          "Name": "cognito-authorizer"
+        }
+      ]
+    },
+    "teyud9cohl": {
+      "name": "kaluna-dev-api",
+      "created": "2026-08-05 18:18:53+00:00",
+      "endpoint": "https://teyud9cohl.execute-api.us-east-1.amazonaws.com",
+      "protocol": "HTTP",
+      "routes": [],
+      "integrations": [],
+      "stages": [
+        {
+          "AutoDeploy": true,
+          "CreatedDate": "2026-08-05 18:18:54+00:00",
+          "DefaultRouteSettings": {
+            "DetailedMetricsEnabled": true,
+            "ThrottlingBurstLimit": 100,
+            "ThrottlingRateLimit": 50.0
+          },
+          "LastDeploymentStatusMessage": "Deployment attempt failed: Unable to deploy API because no valid routes exist in this API",
+          "LastUpdatedDate": "2026-08-05 18:18:56+00:00",
+          "RouteSettings": {},
+          "StageName": "$default",
+          "StageVariables": {},
+          "Tags": {
+            "Environment": "dev"
+          }
+        }
+      ],
+      "authorizers": [
+        {
+          "AuthorizerId": "3l0f39",
+          "AuthorizerType": "JWT",
+          "IdentitySource": [
+            "$request.header.Authorization"
+          ],
+          "JwtConfiguration": {
+            "Audience": [
+              "3h5so9t8tfgse4iu3hqpe8h2qm"
+            ],
+            "Issuer": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_ryDIc2cSX"
+          },
+          "Name": "cognito-authorizer"
+        }
+      ]
+    }
+  },
+  "lambda_policies": {
+    "kaluna-dev-events": {
+      "Version": "2012-10-17",
+      "Id": "default",
+      "Statement": [
+        {
+          "Sid": "AllowExecutionFromAPIGateway",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "apigateway.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:us-east-1:496795891920:function:kaluna-dev-events",
+          "Condition": {
+            "ArnLike": {
+              "AWS:SourceArn": "arn:aws:execute-api:us-east-1:496795891920:gzwmi3wu12/*/*"
+            }
+          }
+        }
+      ]
+    },
+    "kaluna-dev-registrations": {
+      "Version": "2012-10-17",
+      "Id": "default",
+      "Statement": [
+        {
+          "Sid": "AllowExecutionFromAPIGateway",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "apigateway.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:us-east-1:496795891920:function:kaluna-dev-registrations",
+          "Condition": {
+            "ArnLike": {
+              "AWS:SourceArn": "arn:aws:execute-api:us-east-1:496795891920:gzwmi3wu12/*/*"
+            }
+          }
+        }
+      ]
+    },
+    "kaluna-dev-checkin": {
+      "Version": "2012-10-17",
+      "Id": "default",
+      "Statement": [
+        {
+          "Sid": "AllowExecutionFromAPIGateway",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "apigateway.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:us-east-1:496795891920:function:kaluna-dev-checkin",
+          "Condition": {
+            "ArnLike": {
+              "AWS:SourceArn": "arn:aws:execute-api:us-east-1:496795891920:gzwmi3wu12/*/*"
+            }
+          }
+        }
+      ]
+    },
+    "kaluna-dev-reminders": {
+      "Version": "2012-10-17",
+      "Id": "default",
+      "Statement": [
+        {
+          "Sid": "AllowExecutionFromCloudWatch",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "events.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:us-east-1:496795891920:function:kaluna-dev-reminders",
+          "Condition": {
+            "ArnLike": {
+              "AWS:SourceArn": "arn:aws:events:us-east-1:496795891920:rule/kaluna-dev-reminders-schedule"
+            }
+          }
+        }
+      ]
+    },
+    "kaluna-dev-feedback": {
+      "Version": "2012-10-17",
+      "Id": "default",
+      "Statement": [
+        {
+          "Sid": "AllowExecutionFromCloudWatch",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "events.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:us-east-1:496795891920:function:kaluna-dev-feedback",
+          "Condition": {
+            "ArnLike": {
+              "AWS:SourceArn": "arn:aws:events:us-east-1:496795891920:rule/kaluna-dev-feedback-schedule"
+            }
+          }
+        }
+      ]
+    },
+    "kaluna-prod-events": {
+      "Version": "2012-10-17",
+      "Id": "default",
+      "Statement": [
+        {
+          "Sid": "AllowExecutionFromAPIGateway",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "apigateway.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:us-east-1:496795891920:function:kaluna-prod-events",
+          "Condition": {
+            "ArnLike": {
+              "AWS:SourceArn": "arn:aws:execute-api:us-east-1:496795891920:o275c5g9h5/*/*"
+            }
+          }
+        }
+      ]
+    },
+    "kaluna-prod-registrations": {
+      "Version": "2012-10-17",
+      "Id": "default",
+      "Statement": [
+        {
+          "Sid": "AllowExecutionFromAPIGateway",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "apigateway.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:us-east-1:496795891920:function:kaluna-prod-registrations",
+          "Condition": {
+            "ArnLike": {
+              "AWS:SourceArn": "arn:aws:execute-api:us-east-1:496795891920:o275c5g9h5/*/*"
+            }
+          }
+        }
+      ]
+    },
+    "kaluna-prod-checkin": {
+      "Version": "2012-10-17",
+      "Id": "default",
+      "Statement": [
+        {
+          "Sid": "AllowExecutionFromAPIGateway",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "apigateway.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:us-east-1:496795891920:function:kaluna-prod-checkin",
+          "Condition": {
+            "ArnLike": {
+              "AWS:SourceArn": "arn:aws:execute-api:us-east-1:496795891920:o275c5g9h5/*/*"
+            }
+          }
+        }
+      ]
+    },
+    "kaluna-prod-reminders": {
+      "Version": "2012-10-17",
+      "Id": "default",
+      "Statement": [
+        {
+          "Sid": "AllowExecutionFromCloudWatch",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "events.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:us-east-1:496795891920:function:kaluna-prod-reminders",
+          "Condition": {
+            "ArnLike": {
+              "AWS:SourceArn": "arn:aws:events:us-east-1:496795891920:rule/kaluna-prod-reminders-schedule"
+            }
+          }
+        }
+      ]
+    },
+    "kaluna-prod-feedback": {
+      "Version": "2012-10-17",
+      "Id": "default",
+      "Statement": [
+        {
+          "Sid": "AllowExecutionFromCloudWatch",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "events.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:us-east-1:496795891920:function:kaluna-prod-feedback",
+          "Condition": {
+            "ArnLike": {
+              "AWS:SourceArn": "arn:aws:events:us-east-1:496795891920:rule/kaluna-prod-feedback-schedule"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

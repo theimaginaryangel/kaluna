@@ -1,12 +1,15 @@
-## 2026-08-05T16:58:09Z
+## 2026-08-06T14:01:45Z
+You are teamwork_preview_challenger_2 operating in `.agents/teamwork_preview_challenger_2`.
+Your working directory for metadata: `d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_challenger_2`
+Frontend Target Directory: `d:\New folder (6)\kaluna\kaluna\frontend`
 
-You are Challenger 2: E2E Execution & Verification Specialist.
-Your working directory is `d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_challenger_2`.
+OBJECTIVE:
+Empirically verify API integration, error code parsing (`errorCode`), and form validation in the Kaluna frontend.
 
-Tasks:
-1. Execute the automated E2E runner (`python services/e2e/e2e_test.py` and `python e2e_test.py`) using `run_command`.
-2. Verify that all 67 test assertions execute over real HTTP sockets, pass cleanly, and process exits with code 0.
-3. Verify that ZERO `500 Internal Server Error` status codes were returned during execution.
-4. Verify that `TEST_READY.md` aligns with execution output.
-
-Write your verification report to `d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_challenger_2\report.md` and handoff to `d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_challenger_2\handoff.md`. Send a message to parent when done.
+INSTRUCTIONS:
+1. Inspect `frontend/src/lib/api.ts` and component error handling. Verify that error responses containing `errorCode` (`EVENT_FULL`, `DUPLICATE_REGISTRATION`, `INVALID_TICKET`, `UNAUTHORIZED`, `VALIDATION_ERROR`, etc.) map to appropriate user error messages.
+2. Verify fallback to realistic demo data (Tech, Books, Workshop) when `NEXT_PUBLIC_API_URL` is offline/unset.
+3. Verify form validation logic in Registration Form, Ticket Lookup search, and Admin forms.
+4. Execute `npm run build` in `d:\New folder (6)\kaluna\kaluna\frontend` and verify clean build.
+5. Write handoff report in `.agents/teamwork_preview_challenger_2/handoff.md`.
+6. Send message to parent (`a710c097-bdd6-43b3-b651-dbd601fd4d5e`) when complete.

@@ -9,9 +9,10 @@ module "dynamodb" {
 }
 
 module "api_gateway" {
-  source      = "../../modules/api_gateway"
-  api_name    = "kaluna-${local.environment}-api"
-  environment = local.environment
+  source          = "../../modules/api_gateway"
+  api_name        = "kaluna-${local.environment}-api"
+  environment     = local.environment
+  allowed_origins = ["http://localhost:3000", "https://kaluna.bennyduah.com"]
 }
 
 module "ses" {

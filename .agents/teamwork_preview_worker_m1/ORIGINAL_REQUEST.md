@@ -1,34 +1,27 @@
-## 2026-08-05T16:29:47Z
-You are Worker 1: Infrastructure & API Gateway Routing Implementation Specialist.
-Your working directory is `d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_worker_m1`.
+## 2026-08-06T13:42:23Z
+You are teamwork_preview_worker_m1 operating in `.agents/teamwork_preview_worker_m1`.
+Your working directory for metadata: `d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_worker_m1`
+Frontend Target Directory: `d:\New folder (6)\kaluna\kaluna\frontend`
 
 MANDATORY INTEGRITY WARNING:
 DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
 
-Scope & Tasks (Milestone 1):
-1. Fix Route Precedence in `services/events/app.py`:
-   - Inspect lines 90-125 of `services/events/app.py`.
-   - Reorder the `elif` route checks so that `path.startswith('/api/v1/events/') and path.endswith('/registrations') and event_id:` is evaluated BEFORE the generic `/api/v1/events/` check for `GET /events/{eventId}`.
-   - Verify that `GET /api/v1/events/{eventId}/registrations` reaches `list_event_registrations(event_id, format_type)` correctly.
+OBJECTIVE:
+Execute Milestone 1: Initialize Next.js 14 App Router static export frontend project setup in `d:\New folder (6)\kaluna\kaluna\frontend`.
 
-2. Align `openapi.yaml` with Actual API Implementation:
-   - In `openapi.yaml`, update `GET /api/v1/events` response schema to match `{ "events": [...], "nextCursor": "..." }` or top-level array as appropriate.
-   - Ensure `GET /api/v1/events/{eventId}/registrations` parameter `format=csv` and response `text/csv` are specified.
+SPECIFICATIONS TO FOLLOW:
+- `d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_explorer_m1_2\frontend_setup_plan.md`
+- `d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_explorer_m1_3\design_system_spec.md`
 
-3. Complete Terraform Environment Parity:
-   - Compare `terraform/environments/dev/main.tf` with `staging/main.tf` and `prod/main.tf`.
-   - Add missing `reminders` and `feedback` Lambda function definitions, IAM roles/policies, and EventBridge schedule rules (`cron(0 14 * * ? *)` and `cron(0 10 * * ? *)`) to `staging/main.tf` and `prod/main.tf`.
-
-4. Fix Build Checkin Script Compatibility in Terraform:
-   - Inspect `null_resource.build_checkin` in `terraform/environments/dev/main.tf` (and `staging`/`prod`).
-   - Ensure build commands use cross-platform compatible syntax (or PowerShell / bash friendly), specifying `CGO_ENABLED=0 GOOS=linux GOARCH=amd64` when compiling Go binaries.
-
-5. Update `.gitignore`:
-   - Ensure `terraform.tfstate`, `terraform.tfstate.backup`, `.terraform/`, and `*.zip` build files are included in `.gitignore`.
-
-6. Run Unit Tests:
-   - Execute `pytest services/events/tests` and `cd services/checkin && go test -v ./...` using `run_command` to verify no existing tests broke.
-
-Output requirements:
-Write a detailed report to `d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_worker_m1\changes.md` and handoff report to `d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_worker_m1\handoff.md`.
-Send a message to parent when finished.
+TASKS:
+1. Create `frontend/package.json` with dependencies (`next`, `react`, `react-dom`, `framer-motion`, `lucide-react`, `qrcode.react`, `clsx`, `tailwind-merge`, `tailwindcss`, `autoprefixer`, `postcss`, `typescript`, `@types/node`, `@types/react`, `@types/react-dom`).
+2. Create `frontend/next.config.mjs` with `output: 'export'`, `images: { unoptimized: true }`, `trailingSlash: true`.
+3. Create `frontend/tsconfig.json` with path aliases `@/*` -> `./src/*`.
+4. Create `frontend/tailwind.config.js` with Kaluna accent color (`#FF2D87`), dark surface palette (`#090A0F`, `#141622`, `#1B1E2E`, `#272B40`), custom easings (`apple-spring`: `cubic-bezier(0.25, 0.1, 0.25, 1)`, `material-bouncy`: `cubic-bezier(0.34, 1.56, 0.64, 1)`), keyframe animations (`shimmer`, `ripple-expand`), and shadows.
+5. Create `frontend/postcss.config.mjs` and `frontend/.gitignore`.
+6. Create `frontend/src/app/globals.css` with Tailwind directives and custom utility classes (`ring-pink-focus`, `hover-pink-border`, `hover-pink-text`, `hover-pink-glow`, `skeleton-shimmer-pink`).
+7. Create `frontend/src/app/layout.tsx` and `frontend/src/app/page.tsx` (minimal starter).
+8. Run `npm install` in `d:\New folder (6)\kaluna\kaluna\frontend`.
+9. Run `npm run build` in `d:\New folder (6)\kaluna\kaluna\frontend` and verify that `out/` directory is produced cleanly with exit code 0.
+10. Produce detailed handoff report in `.agents/teamwork_preview_worker_m1/handoff.md` including exact commands run and output logs.
+11. Send a message to parent (`a710c097-bdd6-43b3-b651-dbd601fd4d5e`) when complete.

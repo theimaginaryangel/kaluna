@@ -157,7 +157,7 @@ export default function AdminLoginPage() {
 
         <div className="pt-4 border-t border-slate-200 dark:border-slate-800 text-center">
           <p className="text-[11px] text-slate-500 dark:text-slate-500 font-mono">
-            Demo credentials: any non-empty username & password (e.g. admin / secret)
+            Access restricted to authorised administrators.
           </p>
         </div>
       </motion.div>

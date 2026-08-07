@@ -105,9 +105,9 @@ export function EventDetailClient({ id }: { id: string }) {
 
   const capacityPercentage = Math.min(
     100,
-    Math.round((event.registeredCount / (event.capacity || 1)) * 100)
+    Math.round(((event.capacity - event.seatsRemaining) / (event.capacity || 1)) * 100)
   );
-  const remainingSpots = Math.max(0, event.capacity - event.registeredCount);
+  const remainingSpots = Math.max(0, event.seatsRemaining);
   const isSoldOut = event.status === 'Sold Out' || remainingSpots <= 0;
 
   return (
@@ -131,15 +131,14 @@ export function EventDetailClient({ id }: { id: string }) {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         {/* Banner Image Frame */}
         <div className="relative w-full h-80 sm:h-[28rem] overflow-hidden rounded-3xl border border-transparent shadow-soft bg-slate-100 dark:bg-slate-900">
-          <img
-            src={event.imageUrl}
-            alt={event.title}
-            className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
-          />
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-200 to-slate-400 dark:from-slate-800 dark:to-slate-700">
+            <span className="text-3xl font-semibold uppercase tracking-[0.3em] text-slate-700 dark:text-slate-200">
+              {event.name || event.title}
+            </span>
+          </div>
           
           {/* Badges overlay */}
           <div className="absolute top-6 left-6 flex items-center gap-3">
-            <CategoryBadge category={event.category} />
             <StatusBadge status={event.status} />
           </div>
         </div>
@@ -150,49 +149,16 @@ export function EventDetailClient({ id }: { id: string }) {
           <div className="lg:col-span-2 space-y-10">
             <div className="space-y-6">
               <h1 className="text-4xl sm:text-6xl font-bold text-slate-900 dark:text-white uppercase tracking-tighter leading-[0.9]">
-                {event.title}
+                {event.name || event.title}
               </h1>
-
-              {/* Speaker card info */}
-              <div className="flex items-center gap-4 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/50 shadow-soft bg-white dark:bg-[#1C1C1E] w-fit">
-                {event.speaker.avatarUrl ? (
-                  <img
-                    src={event.speaker.avatarUrl}
-                    alt={event.speaker.name}
-                    className="w-14 h-14 object-cover rounded-full"
-                  />
-                ) : (
-                  <div className="w-14 h-14 rounded-full bg-slate-900 dark:bg-white flex items-center justify-center text-white dark:text-slate-900 font-black text-xl">
-                    {event.speaker.name.charAt(0)}
-                  </div>
-                )}
-                <div>
-                  <h4 className="text-lg font-bold text-slate-900 dark:text-white uppercase tracking-wider leading-none">
-                    {event.speaker.name}
-                  </h4>
-                  <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-1 uppercase">{event.speaker.role}</p>
-                </div>
-              </div>
             </div>
 
             {/* Event Description */}
             <div className="p-8 rounded-3xl border border-slate-100 dark:border-slate-800/50 shadow-soft bg-white dark:bg-[#1C1C1E] space-y-6">
               <h3 className="text-2xl font-bold text-slate-900 dark:text-white uppercase tracking-tight">About this Event</h3>
               <p className="text-slate-700 dark:text-slate-300 text-base sm:text-lg font-medium leading-relaxed whitespace-pre-line">
-                {event.description}
+                This event is scheduled for {event.date} at {event.venue || event.location || 'the venue listed below'}.
               </p>
-
-              {/* Tags */}
-              <div className="pt-4 flex flex-wrap gap-3">
-                {event.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs px-4 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold font-mono uppercase"
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
             </div>
           </div>
 
@@ -201,10 +167,10 @@ export function EventDetailClient({ id }: { id: string }) {
             <div className="p-8 rounded-3xl border border-slate-100 dark:border-slate-800/50 bg-white dark:bg-[#1C1C1E] space-y-8 sticky top-28 shadow-soft transition-colors">
               <div className="flex flex-col gap-2 border-b border-slate-100 dark:border-slate-800/50 pb-6">
                 <span className="text-sm font-bold font-mono uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                  Ticket Price
+                  Event Status
                 </span>
                 <span className="text-4xl font-bold font-mono text-slate-900 dark:text-white">
-                  {event.price === 0 ? 'FREE' : `$${event.price}`}
+                  {isSoldOut ? 'Sold Out' : 'Open'}
                 </span>
               </div>
 
@@ -215,7 +181,7 @@ export function EventDetailClient({ id }: { id: string }) {
                   <div>
                     <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wide">Date & Time</span>
                     <p className="text-slate-600 dark:text-slate-400 mt-1">
-                      {event.date} ({event.time})
+                      {event.date}
                     </p>
                   </div>
                 </div>
@@ -224,23 +190,16 @@ export function EventDetailClient({ id }: { id: string }) {
                   <MapPin className="w-5 h-5 text-slate-900 dark:text-white shrink-0 mt-0.5" />
                   <div>
                     <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wide">Venue Location</span>
-                    <p className="text-slate-600 dark:text-slate-400 mt-1">{event.location}</p>
+                    <p className="text-slate-600 dark:text-slate-400 mt-1">{event.venue || event.location || 'Venue TBD'}</p>
                   </div>
                 </div>
 
-                {event.virtualUrl && (
+                {!event.venue && (
                   <div className="flex items-start gap-4">
                     <ExternalLink className="w-5 h-5 text-slate-900 dark:text-white shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wide">Virtual Livestream</span>
-                      <a
-                        href={event.virtualUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-slate-600 dark:text-slate-400 hover:text-[#FF2D87] hover:underline block mt-1"
-                      >
-                        {event.virtualUrl}
-                      </a>
+                      <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wide">Venue Details</span>
+                      <p className="text-slate-600 dark:text-slate-400 mt-1">Venue details will be shared closer to the event date.</p>
                     </div>
                   </div>
                 )}
@@ -254,7 +213,7 @@ export function EventDetailClient({ id }: { id: string }) {
                     <span>Capacity</span>
                   </span>
                   <span className="font-mono text-slate-900 dark:text-white">
-                    {event.registeredCount} / {event.capacity}
+                    {Math.max(0, event.capacity - event.seatsRemaining)} / {event.capacity}
                   </span>
                 </div>
 
@@ -297,7 +256,7 @@ export function EventDetailClient({ id }: { id: string }) {
       <Modal
         isOpen={isRegisterModalOpen}
         onClose={() => setIsRegisterModalOpen(false)}
-        title={`Register for ${event.title}`}
+        title={`Register for ${event.name || event.title}`}
         description="Enter your attendee details below to generate your digital QR pass."
         maxWidth="md"
       >

@@ -7,11 +7,10 @@ import { Event, EventCategory, ApiError } from '@/lib/types';
 import { api, KalunaApiError } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { CategoryBadge, StatusBadge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/badge';
 import { PinkShimmerSkeleton, EventCardSkeleton } from '@/components/ui/skeleton';
 import { Calendar, MapPin, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { AvatarStack } from '@/components/ui/avatar-stack';
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = React.useState<EventCategory | 'All'>('All');
@@ -185,7 +184,7 @@ export default function Home() {
             <AnimatePresence mode="popLayout">
               {events.map((event) => (
                 <motion.div
-                  key={event.id}
+                  key={event.id || event.eventId}
                   layout
                   variants={{
                     hidden: { opacity: 0, y: 10, scale: 0.98, filter: 'blur(4px)' },
@@ -202,13 +201,10 @@ export default function Home() {
                   <Card className="flex flex-col h-full justify-between group rounded-3xl border border-slate-100 dark:border-slate-800/50 shadow-soft hover:shadow-lg dark:hover:border-slate-700 bg-white dark:bg-[#1C1C1E] transition-all duration-400 overflow-hidden">
                     <div>
                       <div className="relative h-64 w-full overflow-hidden bg-slate-100 dark:bg-slate-900">
-                        <img
-                          src={event.imageUrl}
-                          alt={event.title}
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        />
-                        <div className="absolute top-4 left-4">
-                          <CategoryBadge category={event.category} />
+                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-200 to-slate-400 dark:from-slate-800 dark:to-slate-700">
+                          <span className="text-xl font-semibold uppercase tracking-[0.3em] text-slate-700 dark:text-slate-200">
+                            {event.name || event.title}
+                          </span>
                         </div>
                         <div className="absolute top-4 right-4">
                           <StatusBadge status={event.status} />
@@ -217,34 +213,31 @@ export default function Home() {
 
                       <CardHeader className="pt-6">
                         <CardTitle className="text-2xl font-bold uppercase tracking-tight line-clamp-2 text-slate-900 dark:text-white">
-                          {event.title}
+                          {event.name || event.title}
                         </CardTitle>
                         <CardDescription className="text-base font-medium text-slate-600 dark:text-slate-400 line-clamp-3 mt-4">
-                          {event.shortDescription || event.description}
+                          {event.date ? `${event.date} • ${event.venue || event.location || 'Venue TBD'}` : 'Event details will be shared soon.'}
                         </CardDescription>
                       </CardHeader>
 
                       <CardContent className="space-y-3 font-mono text-sm text-slate-700 dark:text-slate-300 font-bold">
                         <div className="flex items-center gap-3">
                           <Calendar className="w-4 h-4" />
-                          <span>
-                            {event.date} • {event.time}
-                          </span>
+                          <span>{event.date}</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <MapPin className="w-4 h-4" />
-                          <span className="truncate">{event.location}</span>
+                          <span className="truncate">{event.venue || event.location || 'Venue TBD'}</span>
                         </div>
                       </CardContent>
                     </div>
 
                     <CardFooter className="pt-6 pb-6 flex-col items-start gap-4">
-                      <AvatarStack />
                       <div className="flex items-center justify-between w-full border-t-2 border-slate-100 dark:border-slate-800 pt-6">
                         <span className="text-lg font-bold font-mono text-slate-900 dark:text-white">
-                          {event.price === 0 ? 'FREE' : `$${event.price}`}
+                          {event.seatsRemaining > 0 ? `${event.seatsRemaining} spots left` : 'Sold out'}
                         </span>
-                        <Link href={`/events/detail?id=${event.slug || event.id}`}>
+                        <Link href={`/events/detail?id=${event.slug || event.id || event.eventId}`}>
                           <Button variant="primary" size="md" className="font-bold uppercase tracking-widest text-xs transition-colors duration-300">
                             <span>Get Pass</span>
                             <ArrowRight className="w-4 h-4 ml-2" />

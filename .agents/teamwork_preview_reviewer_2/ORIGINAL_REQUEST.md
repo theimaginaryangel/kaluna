@@ -1,11 +1,10 @@
-## 2026-08-05T16:58:07Z
-You are Reviewer 2: E2E Test Suite Reviewer.
-Your working directory is `d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_reviewer_2`.
+## 2026-08-06T14:01:45Z
+Perform a design system and motion compliance review of the Kaluna frontend codebase.
 
-Tasks:
-1. Review the automated E2E test script (`services/e2e/e2e_test.py` and `e2e_test.py`) and `TEST_READY.md`.
-2. Verify that the E2E script executes genuine HTTP requests over TCP network sockets against API Gateway endpoints.
-3. Verify that all 4 tiers of test cases (Feature Coverage, Boundary/Edge Cases, Cross-Feature Combinations, Real-World Lifecycle) are comprehensively covered.
-4. Run or inspect the E2E test execution (`python services/e2e/e2e_test.py`) using `run_command` and confirm exit code 0 with zero 500 status codes.
-
-Write your review report to `d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_reviewer_2\report.md` and handoff to `d:\New folder (6)\kaluna\kaluna\.agents\teamwork_preview_reviewer_2\handoff.md`. Send a message to parent when done.
+INSTRUCTIONS:
+1. Perform a strict check on `#FF2D87` (hot pink) accent color. Confirm it is ONLY used for interactive/motion states (hovers, focus-visible outline/ring, active, ripples, animated fills, shimmer skeleton loader) and NEVER for static text or background fills.
+2. Verify Apple spring easing (`cubic-bezier(0.25, 0.1, 0.25, 1)`) for page transitions and Framer Motion reveals.
+3. Verify Material bouncy easing (`cubic-bezier(0.34, 1.56, 0.64, 1)`) for direct interactions, button presses, and ripple expansion.
+4. Execute `npm run build` in `d:\New folder (6)\kaluna\kaluna\frontend` and verify exit code 0.
+5. Write handoff report in `.agents/teamwork_preview_reviewer_2/handoff.md`.
+6. Send message to parent (`a710c097-bdd6-43b3-b651-dbd601fd4d5e`) when complete.

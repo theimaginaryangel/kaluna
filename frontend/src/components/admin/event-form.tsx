@@ -16,18 +16,18 @@ interface EventFormProps {
 export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) {
   const router = useRouter();
 
-  const [title, setTitle] = React.useState(initialEvent?.title || '');
-  const [category, setCategory] = React.useState<EventCategory>(initialEvent?.category || 'Tech');
+  const [title, setTitle] = React.useState(initialEvent?.name || initialEvent?.title || '');
+  const [category, setCategory] = React.useState<EventCategory>('Tech');
   const [date, setDate] = React.useState(initialEvent?.date || new Date().toISOString().split('T')[0]);
-  const [time, setTime] = React.useState(initialEvent?.time || '18:00 - 20:00 EST');
-  const [location, setLocation] = React.useState(initialEvent?.location || 'Kaluna Main Stage (Hall A)');
-  const [speakerName, setSpeakerName] = React.useState(initialEvent?.speaker.name || '');
-  const [speakerRole, setSpeakerRole] = React.useState(initialEvent?.speaker.role || '');
+  const [time, setTime] = React.useState('18:00 - 20:00 EST');
+  const [location, setLocation] = React.useState(initialEvent?.venue || initialEvent?.location || 'Kaluna Main Stage (Hall A)');
+  const [speakerName, setSpeakerName] = React.useState('');
+  const [speakerRole, setSpeakerRole] = React.useState('');
   const [capacity, setCapacity] = React.useState<number>(initialEvent?.capacity || 100);
-  const [price, setPrice] = React.useState<number>(initialEvent?.price || 0);
-  const [imageUrl, setImageUrl] = React.useState(initialEvent?.imageUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80');
-  const [description, setDescription] = React.useState(initialEvent?.description || '');
-  const [tagsInput, setTagsInput] = React.useState(initialEvent?.tags ? initialEvent.tags.join(', ') : 'Tech, Workshop');
+  const [price, setPrice] = React.useState<number>(0);
+  const [imageUrl, setImageUrl] = React.useState('');
+  const [description, setDescription] = React.useState('');
+  const [tagsInput, setTagsInput] = React.useState('');
 
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [apiError, setApiError] = React.useState<ApiError | null>(null);
@@ -39,9 +39,7 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
     if (!title.trim()) errs.title = 'Event title is required';
     if (!date.trim()) errs.date = 'Event date is required';
     if (!location.trim()) errs.location = 'Venue location is required';
-    if (!speakerName.trim()) errs.speakerName = 'Speaker name is required';
     if (capacity < 1) errs.capacity = 'Capacity must be at least 1 spot';
-    if (!description.trim()) errs.description = 'Description is required';
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -55,28 +53,17 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
 
     setIsSubmitting(true);
 
-    const tags = tagsInput
-      .split(',')
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0);
-
     const eventPayload: Partial<Event> = {
+      name: title.trim(),
       title: title.trim(),
-      category,
       date,
-      time: time.trim(),
+      venue: location.trim(),
       location: location.trim(),
-      speaker: {
-        name: speakerName.trim(),
-        role: speakerRole.trim() || 'Speaker / Presenter',
-      },
       capacity: Number(capacity),
-      price: Number(price),
-      imageUrl: imageUrl.trim(),
-      description: description.trim(),
-      shortDescription: description.slice(0, 120),
-      tags,
     };
+
+    // The current backend contract only stores name/date/venue/capacity.
+    // The additional form fields remain in local state for future support.
 
     try {
       if (isEditMode && initialEvent?.id) {
