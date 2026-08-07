@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { SparkleBurst } from '@/components/ui/sparkle-burst';
 
 export interface ButtonProps extends Omit<HTMLMotionProps<"button">, 'children'> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'white';
@@ -32,6 +33,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const [ripples, setRipples] = React.useState<Ripple[]>([]);
+    const [isHovered, setIsHovered] = React.useState(false);
 
     const handlePointerDown = (e: React.MouseEvent<HTMLButtonElement>) => {
       const button = e.currentTarget;
@@ -70,6 +72,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         whileHover={{ scale: disabled || isLoading ? 1 : 1.03, boxShadow: '0px 0px 18px rgba(255, 45, 135, 0.35)' }}
         whileTap={{ scale: disabled || isLoading ? 1 : 0.96 }}
         transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+        onHoverStart={() => setIsHovered(true)}
+        onHoverEnd={() => setIsHovered(false)}
         onClick={(e) => {
           handlePointerDown(e);
           onClick?.(e);
@@ -128,6 +132,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             />
           ))}
         </span>
+
+        <SparkleBurst active={isHovered && !disabled && !isLoading} count={3} />
       </motion.button>
     );
   }

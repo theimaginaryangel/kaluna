@@ -1,6 +1,7 @@
 import * as React from 'react';
 import Link from 'next/link';
-import { Sparkles, Github, Twitter, Globe, Heart } from 'lucide-react';
+import { Github, Twitter, Globe, Heart } from 'lucide-react';
+import { WordmarkLink } from '@/components/layout/wordmark-link';
 
 export function Footer() {
   return (
@@ -9,14 +10,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
           {/* Brand Col */}
           <div className="space-y-4 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2 group w-fit">
-              <div className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center group-hover:border-[#FF2D87] transition-colors">
-                <Sparkles className="w-3.5 h-3.5 text-white group-hover:text-[#FF2D87] transition-colors" />
-              </div>
-              <span className="font-mono text-lg font-bold tracking-tight text-white">
-                KALUNA
-              </span>
-            </Link>
+            <WordmarkLink />
             <p className="text-xs text-slate-400 leading-relaxed">
               Curated technical workshops, literary salons, and speculative discourse. Built with editorial precision.
             </p>
