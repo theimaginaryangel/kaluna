@@ -8,13 +8,14 @@ interface ButterflyBurstProps {
   count?: number;
 }
 
-// Offsets are relative to the LEFT edge of the text, so butterflies hover
-// clearly beside the dedication rather than on top of it.
+// Positioned in % of the text's own width/height.
+// x: negative = how far left of the text's left edge (0 = at the first letter).
+// y: 0 = top, 50 = middle, 100 = bottom of the text line.
 const OFFSETS = [
-  { x: -30, y: -22 },
-  { x: -50, y: -6 },
-  { x: -26, y: 12 },
-  { x: -46, y: 16 },
+  { x: -35, y: 25 },
+  { x: -75, y: 55 },
+  { x: -25, y: 80 },
+  { x: -95, y: 30 },
 ];
 
 function FlutteringButterfly({ size = 18, phase = 0 }: { size?: number; phase?: number }) {
@@ -73,9 +74,9 @@ export function ButterflyBurst({ active, count = 3 }: ButterflyBurstProps) {
               key={i}
               className="absolute"
               style={{
-                left: '0%',
-                top: '50%',
-                transform: `translate(${offset.x}px, calc(-50% + ${offset.y}px))`,
+                left: `${offset.x}%`,
+                top: `${offset.y}%`,
+                transform: 'translate(-50%, -50%)',
               }}
               initial={{ opacity: 0, scale: 0.4 }}
               animate={{ opacity: 1, scale: 1 }}
