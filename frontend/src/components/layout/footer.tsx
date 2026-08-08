@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { Github, Linkedin, Globe } from 'lucide-react';
 import { WordmarkLink } from '@/components/layout/wordmark-link';
-import { SparkleBurst } from '@/components/ui/sparkle-burst';
+import { ButterflyBurst } from '@/components/ui/butterfly-burst';
 
 export function Footer() {
   const [dedicationHovered, setDedicationHovered] = React.useState(false);
@@ -22,7 +22,7 @@ export function Footer() {
             >
               For Karen, moonlight.
               <span className="absolute inset-0 pointer-events-none" style={{ overflow: 'visible' }}>
-                <SparkleBurst active={dedicationHovered} count={3} />
+                <ButterflyBurst active={dedicationHovered} count={3} />
               </span>
             </p>
             <div className="flex items-center gap-3 pt-1">
