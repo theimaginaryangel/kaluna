@@ -60,6 +60,11 @@ Frontend CD (prod, after terraform apply): `npm run build` → `aws s3 sync` →
 
 `dev` → `staging` → `prod`, each a separate Terraform state, same modules with environment-scoped variables (`kaluna-dev-*`, `kaluna-staging-*`, `kaluna-prod-*`). `develop` branch auto-deploys to dev; `main` deploys to prod on merge.
 
-## v2 (post-MVP)
+## Post-MVP (shipped)
 
-Once v1 is deployed and stable: CloudFront in front of the static frontend, EventBridge for scheduled reminders. Not built until the core system is proven.
+Both v2 candidates are already built and deployed:
+
+- **CloudFront** in front of the static frontend (custom domain + ACM cert, SPA 404 handling, cache invalidation in CI) — `terraform/modules/frontend`
+- **Scheduled reminders** (EventBridge/CloudWatch Events → Lambda → SES): event reminders 24h before, plus automated post-event feedback emails — `services/reminders`
+
+Anything still deliberately out of scope lives in `docs/12-future-roadmap.md`.
