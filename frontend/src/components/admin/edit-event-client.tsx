@@ -2,12 +2,11 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { Event } from '@/lib/types';
 import { api } from '@/lib/api';
 import { EventForm } from '@/components/admin/event-form';
 import { PinkShimmerSkeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Sparkles, AlertCircle } from 'lucide-react';
+import { ArrowLeft, PencilLine, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function EditEventClient({ id }: { id: string }) {
@@ -30,8 +29,6 @@ export function EditEventClient({ id }: { id: string }) {
     }
     loadEvent();
   }, [id]);
-
-  const appleSpringEase = [0.25, 0.1, 0.25, 1] as const;
 
   if (isLoading) {
     return (
@@ -72,15 +69,10 @@ export function EditEventClient({ id }: { id: string }) {
         </Link>
 
         {/* Form Container */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: appleSpringEase }}
-          className="p-6 sm:p-8 rounded-3xl bg-[#141622] border border-[#272B40] shadow-2xl space-y-6"
-        >
+        <div className="p-6 sm:p-8 rounded-3xl bg-[#141622] border border-[#272B40] shadow-2xl space-y-6">
           <div className="space-y-1.5 border-b border-[#272B40] pb-5">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-xs font-mono text-slate-300">
-              <Sparkles className="w-3.5 h-3.5 text-slate-400" />
+              <PencilLine className="w-3.5 h-3.5 text-slate-400" />
               <span>Event Editor</span>
             </div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight pt-1">
@@ -92,7 +84,7 @@ export function EditEventClient({ id }: { id: string }) {
           </div>
 
           <EventForm initialEvent={event} isEditMode={true} />
-        </motion.div>
+        </div>
       </div>
     </div>
   );

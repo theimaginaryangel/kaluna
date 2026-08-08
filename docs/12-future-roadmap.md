@@ -9,9 +9,11 @@ Cut from v1 deliberately, to keep the build shippable. Candidates for future rel
 
 ## Shipped Features (v1.1)
 
-- **Waitlist** — auto-promote when a cancellation frees a seat
+- **Waitlist** — auto-promote when a cancellation frees a seat; now fully wired end-to-end: join-waitlist flow on the registration form, waitlist confirmation page, per-event waitlist toggle in the event form, and a waitlisted-attendees view in the dashboard
+- **Self-service cancellation** — `/cancel` page plus a "Cancel your registration" link in the confirmation email
+- **Dashboard upgrades** — per-event CSV export (previously only exported the first event), live "checked-in / registered" badges, and expandable waitlist lists per event
 - **Event reminders** — EventBridge Scheduler + SES, 24h before an event
 - **Post-event feedback** — automated survey email after check-in
 - **ICS Calendar Invites** — MIME multipart email with RFC 5545 `.ics` file attachment
-- **Social Proof Avatars** — DiceBear SVG avatar stack on event cards
 - **Cognito RBAC** — Creator vs Godmode Admin role-based authorization split
+- **Public polish** — live capacity bars on event cards

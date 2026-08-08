@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Event, EventCategory, ApiError } from '@/lib/types';
 import { api, KalunaApiError, isCreatorMode } from '@/lib/api';
 import { useRouter } from 'next/navigation';
@@ -58,19 +57,11 @@ export default function Home() {
     fetchEvents(selectedCategory);
   }, [selectedCategory, fetchEvents]);
 
-  const appleSpringEase = [0.25, 0.1, 0.25, 1] as const;
-
   return (
     <div className="min-h-screen pb-24 bg-white dark:bg-[#1C1C1E] transition-colors duration-300">
       {/* Editorial Hero Section */}
       <section className="pt-24 pb-20 border-b border-slate-100 dark:border-slate-800">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.7, ease: appleSpringEase }}
-          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8"
-        >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
           <div className="inline-block px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-full text-sm font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
             Kaluna Editorial Events
           </div>
@@ -98,7 +89,7 @@ export default function Home() {
               </Button>
             </Link>
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* Main Catalog & Filter Section */}
@@ -106,15 +97,9 @@ export default function Home() {
         {/* Interactive Category Filter Bar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border-b-2 border-slate-200 dark:border-slate-800 pb-8">
           <div>
-            <motion.h2
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.4 }}
-              transition={{ duration: 0.6, ease: appleSpringEase }}
-              className="text-4xl font-bold text-slate-900 dark:text-white tracking-tighter uppercase"
-            >
+            <h2 className="text-4xl font-bold text-slate-900 dark:text-white tracking-tighter uppercase">
               Explore
-            </motion.h2>
+            </h2>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -194,115 +179,84 @@ export default function Home() {
 
         {/* Event Grid */}
         {!isLoading && !apiError && events.length > 0 && (
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={{
-              hidden: { opacity: 0 },
-              visible: {
-                opacity: 1,
-                transition: {
-                  staggerChildren: 0.1,
-                },
-              },
-            }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-          >
-            <AnimatePresence mode="popLayout">
-              {events.map((event) => {
-                const registered = Math.max(0, event.capacity - event.seatsRemaining);
-                const fillPercent = Math.min(100, Math.round((registered / (event.capacity || 1)) * 100));
-                return (
-                <motion.div
-                  key={event.id || event.eventId}
-                  layout
-                  variants={{
-                    hidden: { opacity: 0, y: 10, scale: 0.98, filter: 'blur(4px)' },
-                    visible: {
-                      opacity: 1,
-                      y: 0,
-                      scale: 1,
-                      filter: 'blur(0px)',
-                      transition: { duration: 0.5, ease: appleSpringEase },
-                    },
-                  }}
-                  exit={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
-                >
-                  <Card className="flex flex-col h-full justify-between group rounded-3xl border border-slate-100 dark:border-slate-800/50 shadow-soft hover:shadow-lg dark:hover:border-slate-700 bg-white dark:bg-[#1C1C1E] transition-all duration-400 overflow-hidden">
-                    <div>
-                      <div className="relative h-64 w-full overflow-hidden bg-slate-100 dark:bg-slate-900">
-                        <EventImage
-                          src={event.imageUrl}
-                          seed={event.eventId || event.id || event.name}
-                          alt={event.name || event.title || 'Event'}
-                          className="transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-                        <div className="absolute top-4 right-4">
-                          <StatusBadge status={event.status} />
-                        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {events.map((event) => {
+              const registered = Math.max(0, event.capacity - event.seatsRemaining);
+              const fillPercent = Math.min(100, Math.round((registered / (event.capacity || 1)) * 100));
+              return (
+                <Card key={event.id || event.eventId} className="flex flex-col h-full justify-between group rounded-3xl border border-slate-100 dark:border-slate-800/50 shadow-soft hover:shadow-lg dark:hover:border-slate-700 bg-white dark:bg-[#1C1C1E] transition-all duration-400 overflow-hidden">
+                  <div>
+                    <div className="relative h-64 w-full overflow-hidden bg-slate-100 dark:bg-slate-900">
+                      <EventImage
+                        src={event.imageUrl}
+                        seed={event.eventId || event.id || event.name}
+                        alt={event.name || event.title || 'Event'}
+                        className="transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+                      <div className="absolute top-4 right-4">
+                        <StatusBadge status={event.status} />
                       </div>
-
-                      <CardHeader className="pt-6">
-                        <CardTitle className="text-2xl font-bold uppercase tracking-tight line-clamp-2 text-slate-900 dark:text-white">
-                          {event.name || event.title}
-                        </CardTitle>
-                        <CardDescription className="text-base font-medium text-slate-600 dark:text-slate-400 line-clamp-3 mt-4">
-                          {event.date ? `${event.date} • ${event.venue || event.location || 'Venue TBD'}` : 'Event details will be shared soon.'}
-                        </CardDescription>
-                      </CardHeader>
-
-                      <CardContent className="space-y-3 font-mono text-sm text-slate-700 dark:text-slate-300 font-bold">
-                        <div className="flex items-center gap-3">
-                          <Calendar className="w-4 h-4" />
-                          <span>{event.date}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <MapPin className="w-4 h-4" />
-                          <span className="truncate">{event.venue || event.location || 'Venue TBD'}</span>
-                        </div>
-                      </CardContent>
                     </div>
 
-                    <CardFooter className="pt-6 pb-6 flex-col items-start gap-4">
-                      <div className="w-full space-y-1.5">
-                        <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                          <span>{registered} registered</span>
-                          <span>{fillPercent}% full</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className={cn(
-                              'h-full rounded-full transition-all duration-500',
-                              fillPercent >= 100
-                                ? 'bg-rose-500'
-                                : fillPercent >= 80
-                                ? 'bg-amber-500'
-                                : 'bg-[#FF2D87]'
-                            )}
-                            style={{ width: `${fillPercent}%` }}
-                          />
-                        </div>
+                    <CardHeader className="pt-6">
+                      <CardTitle className="text-2xl font-bold uppercase tracking-tight line-clamp-2 text-slate-900 dark:text-white">
+                        {event.name || event.title}
+                      </CardTitle>
+                      <CardDescription className="text-base font-medium text-slate-600 dark:text-slate-400 line-clamp-3 mt-4">
+                        {event.date ? `${event.date} • ${event.venue || event.location || 'Venue TBD'}` : 'Event details will be shared soon.'}
+                      </CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="space-y-3 font-mono text-sm text-slate-700 dark:text-slate-300 font-bold">
+                      <div className="flex items-center gap-3">
+                        <Calendar className="w-4 h-4" />
+                        <span>{event.date}</span>
                       </div>
-                      <AvatarStack registeredCount={registered} className="w-full" />
-                      <div className="flex items-center justify-between w-full border-t-2 border-slate-100 dark:border-slate-800 pt-6">
-                        <span className="text-lg font-bold font-mono text-slate-900 dark:text-white">
-                          {event.seatsRemaining > 0 ? `${event.seatsRemaining} spots left` : 'Sold out'}
-                        </span>
-                        <Link href={`/events/detail?id=${event.slug || event.id || event.eventId}`}>
-                          <Button variant="primary" size="md" className="font-bold uppercase tracking-widest text-xs transition-colors duration-300">
-                            <span>Get Pass</span>
-                            <ArrowRight className="w-4 h-4 ml-2" />
-                          </Button>
-                        </Link>
+                      <div className="flex items-center gap-3">
+                        <MapPin className="w-4 h-4" />
+                        <span className="truncate">{event.venue || event.location || 'Venue TBD'}</span>
                       </div>
-                    </CardFooter>
-                  </Card>
-                </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </motion.div>
+                    </CardContent>
+                  </div>
+
+                  <CardFooter className="pt-6 pb-6 flex-col items-start gap-4">
+                    <div className="w-full space-y-1.5">
+                      <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        <span>{registered} registered</span>
+                        <span>{fillPercent}% full</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className={cn(
+                            'h-full rounded-full transition-all duration-500',
+                            fillPercent >= 100
+                              ? 'bg-rose-500'
+                              : fillPercent >= 80
+                              ? 'bg-amber-500'
+                              : 'bg-[#FF2D87]'
+                          )}
+                          style={{ width: `${fillPercent}%` }}
+                        />
+                      </div>
+                    </div>
+                    <AvatarStack registeredCount={registered} className="w-full" />
+                    <div className="flex items-center justify-between w-full border-t-2 border-slate-100 dark:border-slate-800 pt-6">
+                      <span className="text-lg font-bold font-mono text-slate-900 dark:text-white">
+                        {event.seatsRemaining > 0 ? `${event.seatsRemaining} spots left` : 'Sold out'}
+                      </span>
+                      <Link href={`/events/detail?id=${event.slug || event.id || event.eventId}`}>
+                        <Button variant="primary" size="md" className="font-bold uppercase tracking-widest text-xs transition-colors duration-300">
+                          <span>Get Pass</span>
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardFooter>
+                </Card>
+              );
+            })}
+          </div>
         )}
       </section>
     </div>

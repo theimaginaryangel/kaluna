@@ -2,6 +2,7 @@
 
 - **IAM**: one execution role per Lambda, scoped to only the DynamoDB actions/resources it needs. No shared "admin" role for functions.
 - **Auth**: Cognito User Pool guards all `/events` write routes, `/registrations` export, `/analytics`. Public read/register/check-in routes stay open by design.
+- **Self-service cancel**: `POST /registrations/{ticketId}/cancel` and the `/cancel` page are unauthenticated by design — the ticket ID (only ever emailed to the attendee) acts as the bearer credential, and the operation is scoped to that single ticket.
 - **Input validation**: every Lambda validates and sanitizes input before touching DynamoDB — reject malformed email, missing fields, out-of-range capacity, before any write.
 - **Secrets**: nothing committed to the repo. Terraform variables via `.tfvars` (gitignored) locally, GitHub Actions Secrets in CI.
 - **Rate limiting**: API Gateway usage plans on public endpoints to blunt abuse of `/register` and `/check-in`.

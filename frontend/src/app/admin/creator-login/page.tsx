@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { setCreatorEmail } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Mail, AlertCircle, ArrowLeft } from 'lucide-react';
+import { UserRound, Mail, AlertCircle, ArrowLeft } from 'lucide-react';
 
 export default function CreatorLoginPage() {
   const router = useRouter();
@@ -51,7 +51,7 @@ export default function CreatorLoginPage() {
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center mx-auto text-slate-900 dark:text-white shadow-inner">
-            <Sparkles className="w-6 h-6 text-[#FF2D87]" />
+            <UserRound className="w-6 h-6 text-[#FF2D87]" />
           </div>
 
           <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight pt-2">

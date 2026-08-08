@@ -431,6 +431,9 @@ components:
         capacity: { type: integer }
         seatsRemaining: { type: integer }
         status: { type: string, enum: [available, limited, sold_out] }
+        waitlistEnabled: { type: boolean }
+        ownerId: { type: string }
+        createdAt: { type: string, format: date-time }
         imageUrl: { type: string, format: uri, maxLength: 2048 }
     EventInput:
       type: object
@@ -440,6 +443,7 @@ components:
         date: { type: string, format: date }
         venue: { type: string }
         capacity: { type: integer }
+        waitlistEnabled: { type: boolean }
         imageUrl: { type: string, format: uri, maxLength: 2048 }
     Registration:
       type: object
@@ -449,7 +453,7 @@ components:
         eventId: { type: string }
         name: { type: string }
         email: { type: string }
-        status: { type: string, enum: [registered, checked_in, cancelled] }
+        status: { type: string, enum: [registered, waitlisted, checked_in, cancelled] }
         registeredAt: { type: string, format: date-time }
     Error:
       type: object

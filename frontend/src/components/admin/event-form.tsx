@@ -117,7 +117,7 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
           <Input
             label="Event Title"
             type="text"
-            placeholder="e.g. Next-Gen Autonomous AI Agents"
+            placeholder="e.g. An Evening with the Essayists"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             error={errors.title}
@@ -179,7 +179,7 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
         <Input
           label="Speaker Name"
           type="text"
-          placeholder="e.g. Dr. Aris Thorne"
+          placeholder="e.g. Maya Lindqvist"
           value={speakerName}
           onChange={(e) => setSpeakerName(e.target.value)}
           error={errors.speakerName}
@@ -191,7 +191,7 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
         <Input
           label="Speaker Role / Organization"
           type="text"
-          placeholder="e.g. Head of AI, Neural Systems"
+          placeholder="e.g. Staff Writer, The Kaluna Review"
           value={speakerRole}
           onChange={(e) => setSpeakerRole(e.target.value)}
           disabled={isSubmitting}

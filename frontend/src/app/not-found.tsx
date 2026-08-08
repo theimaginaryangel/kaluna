@@ -2,27 +2,19 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Home, ArrowLeft } from 'lucide-react';
+import { AlertCircle, Home, ArrowLeft } from 'lucide-react';
 
 export default function NotFound() {
-  const appleSpringEase = [0.25, 0.1, 0.25, 1] as const;
-
   return (
     <div className="min-h-screen bg-[#090A0F] text-slate-100 flex items-center justify-center px-4 py-24">
-      <motion.div
-        initial={{ opacity: 0, y: 24, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease: appleSpringEase }}
-        className="max-w-lg w-full text-center space-y-8 p-8 sm:p-12 rounded-3xl bg-[#141622] border border-[#272B40] shadow-2xl relative overflow-hidden"
-      >
+      <div className="max-w-lg w-full text-center space-y-8 p-8 sm:p-12 rounded-3xl bg-[#141622] border border-[#272B40] shadow-2xl relative overflow-hidden">
         {/* Subtle background glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-slate-800/40 blur-[90px] rounded-full pointer-events-none" />
 
         {/* 404 Hero Badge */}
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-xs font-mono text-slate-400">
-          <Sparkles className="w-3.5 h-3.5 text-slate-400" />
+          <AlertCircle className="w-3.5 h-3.5 text-slate-400" />
           <span>Error Code 404</span>
         </div>
 
@@ -35,7 +27,7 @@ export default function NotFound() {
             Stage Not Found
           </h2>
           <p className="text-slate-400 text-sm leading-relaxed max-w-sm mx-auto">
-            The event session or destination you are searching for does not exist or has been moved to a new venue schedule.
+            This page doesn't exist or has moved.
           </p>
         </div>
 
@@ -54,7 +46,7 @@ export default function NotFound() {
             </Button>
           </Link>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

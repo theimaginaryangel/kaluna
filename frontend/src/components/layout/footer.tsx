@@ -4,25 +4,16 @@ import * as React from 'react';
 import Link from 'next/link';
 import { Github, Linkedin, Globe, Moon } from 'lucide-react';
 import { WordmarkLink } from '@/components/layout/wordmark-link';
-import { ButterflyBurst } from '@/components/ui/butterfly-burst';
 
 export function Footer() {
-  const [dedicationHovered, setDedicationHovered] = React.useState(false);
   return (
     <footer className="w-full bg-[#090A0F] border-t border-[#272B40] text-slate-400 text-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
           {/* Brand Col */}
           <div className="relative space-y-4 md:col-span-1">
-            <span className="absolute inset-0 pointer-events-none" style={{ overflow: 'visible' }}>
-              <ButterflyBurst active={dedicationHovered} />
-            </span>
             <WordmarkLink />
-            <p
-              className="relative w-fit text-xs text-slate-400 leading-relaxed transition-colors duration-200 hover:text-[#FF2D87]"
-              onMouseEnter={() => setDedicationHovered(true)}
-              onMouseLeave={() => setDedicationHovered(false)}
-            >
+            <p className="relative w-fit text-xs text-slate-400 leading-relaxed transition-colors duration-200 hover:text-[#FF2D87]">
               For Karen, moonlight.
               <Moon
                 className="inline-block w-3.5 h-3.5 ml-1.5 mb-[3px] text-[#FF2D87]/80"

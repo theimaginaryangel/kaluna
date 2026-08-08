@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { SparkleBurst } from '@/components/ui/sparkle-burst';
 
 export function WordmarkLink() {
   const [hovered, setHovered] = React.useState(false);
@@ -21,9 +20,6 @@ export function WordmarkLink() {
       </span>
       <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
         EVENTS
-      </span>
-      <span className="absolute -top-3 -right-3 pointer-events-none" style={{ overflow: 'visible' }}>
-        <SparkleBurst active={hovered} count={3} />
       </span>
     </Link>
   );

@@ -2,13 +2,10 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { EventForm } from '@/components/admin/event-form';
-import { ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft, CalendarPlus } from 'lucide-react';
 
 export default function CreateEventPage() {
-  const appleSpringEase = [0.25, 0.1, 0.25, 1] as const;
-
   return (
     <div className="min-h-screen bg-[#090A0F] text-slate-100 pb-24 pt-8">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
@@ -22,15 +19,10 @@ export default function CreateEventPage() {
         </Link>
 
         {/* Form Container */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: appleSpringEase }}
-          className="p-6 sm:p-8 rounded-3xl bg-[#141622] border border-[#272B40] shadow-2xl space-y-6"
-        >
+        <div className="p-6 sm:p-8 rounded-3xl bg-[#141622] border border-[#272B40] shadow-2xl space-y-6">
           <div className="space-y-1.5 border-b border-[#272B40] pb-5">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-xs font-mono text-slate-300">
-              <Sparkles className="w-3.5 h-3.5 text-slate-400" />
+              <CalendarPlus className="w-3.5 h-3.5 text-slate-400" />
               <span>New Event Creator</span>
             </div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight pt-1">
@@ -42,7 +34,7 @@ export default function CreateEventPage() {
           </div>
 
           <EventForm isEditMode={false} />
-        </motion.div>
+        </div>
       </div>
     </div>
   );

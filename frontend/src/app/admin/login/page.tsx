@@ -7,7 +7,7 @@ import { api, KalunaApiError } from '@/lib/api';
 import { ApiError } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ShieldCheck, User, Lock, AlertCircle, Sparkles } from 'lucide-react';
+import { ShieldCheck, User, Lock, AlertCircle } from 'lucide-react';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -99,7 +99,7 @@ export default function AdminLoginPage() {
             Admin Console Login
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Authenticated session portal backed by Amazon Cognito JWT state.
+            Sign in with your Cognito admin credentials.
           </p>
         </div>
 
@@ -155,11 +155,6 @@ export default function AdminLoginPage() {
           </div>
         </form>
 
-        <div className="pt-4 border-t border-slate-200 dark:border-slate-800 text-center">
-          <p className="text-[11px] text-slate-500 dark:text-slate-500 font-mono">
-            Access restricted to authorised administrators.
-          </p>
-        </div>
       </motion.div>
     </div>
   );

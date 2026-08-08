@@ -113,7 +113,7 @@ export default function TicketLookupPage() {
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <Input
               type="text"
-              placeholder="Enter Ticket Code or Email (e.g. KALUNA-AI-9842)"
+              placeholder="Enter Ticket Code or Email (e.g. KALUNA-7F3K9Q)"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               icon={<Search className="w-4 h-4" />}

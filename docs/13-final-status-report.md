@@ -121,12 +121,13 @@ dynamodb.meta.client.transact_write_items(
 | **QR Check-in** | Scan tickets at the door | Go Lambda service using SDK v2, querying GSI1 and executing atomic status transitions (`registered` → `checked_in`). Fixed `PayloadFormatVersion` from `1.0` → `2.0` on all three API Gateway integrations. | **LIVE-TESTED** |
 | **Live Check-In Feed** | Real-time attendee stream in admin dashboard | Dashboard fetches `GET /api/v1/events/{eventId}/check-ins` for all events in parallel via `Promise.allSettled`, filters `checked_in` status, sorts by time. | **LIVE-TESTED** |
 | **Per-Role Analytics** | Different stats for Creator vs Admin tabs | Creator tab computes stats scoped to `displayedEvents` (registrations = `capacity - seatsRemaining`, check-ins filtered by eventId). Admin tab shows platform-wide API totals. | **LIVE-TESTED** |
-| **Automated Waitlists** | Overflow queue when full | Registrations Lambda catches `ConditionalCheckFailedException`, writes user to `status: "waitlisted"`. On cancellation, auto-promotes earliest waitlisted user. | **ROUTE-EXISTS / CODE-COMPLETE** |
+| **Automated Waitlists** | Overflow queue when full; join from the registration form | Registrations Lambda catches `ConditionalCheckFailedException`, writes user to `status: "waitlisted"`. On cancellation, auto-promotes earliest waitlisted user. Full frontend UX: "Join Waitlist" button on sold-out events, waitlist confirmation page (`/success?waitlist=1`), per-event waitlist toggle in the event form, waitlist-attendees panel in the dashboard. | **LIVE-TESTED** |
+| **Self-Service Cancellation** | Cancel a registration from the confirmation email | `POST /api/v1/registrations/{ticketId}/cancel` releases the seat and auto-promotes the next waitlisted attendee. Confirmation email now carries a "Cancel your registration" link to the `/cancel` page. Ticket ID is the bearer credential. | **LIVE-TESTED** |
 | **Calendar Invites** | 1-click Google/Apple calendar add | Python MIME multipart email generator (`generate_ics()`) attaching standard RFC 5545 `event.ics` files via SES. | **ROUTE-EXISTS / CODE-COMPLETE** |
-| **Avatar Stack** | Visual social proof with live count | `AvatarStack` component wired to real `capacity - seatsRemaining` per event. Shows up to 5 DiceBear avatars + actual registered count. Returns `null` when 0 registered. | **LIVE-TESTED** |
-| **Hot Pink Sparkle UI** | Button & logo hover animation | `SparkleBurst` component positioned at `-top-3 -right-2` outside `overflow-hidden` on buttons and navbar/footer wordmark. `#FF2D87` color transition on hover. | **LIVE-TESTED** |
+| **Attendance Count** | Honest "N going" social proof | `AvatarStack` component shows the real `capacity - seatsRemaining` count per event with a users icon; returns `null` when 0 registered. (Fabricated DiceBear avatar images removed.) | **LIVE-TESTED** |
 | **RBAC / Godmode** | Creator vs Admin access split | Cognito User Groups (`Admin`, `Creator`) checked at API Gateway JWT authorizer & Lambda layer (`cognito:groups` claim filtering `ownerId`). | **ROUTE-EXISTS / CODE-COMPLETE** |
-| **Admin Dashboard** | Live stats & event management | Next.js App Router client dashboard with capacity progress bars, real-time check-in stream, CSV export, delete with confirmation, and client session guard. | **LIVE-TESTED** |
+| **Admin Dashboard** | Live stats & event management | Next.js App Router client dashboard with capacity progress bars, real-time check-in stream, **per-event CSV export**, live "checked-in / registered" badges, expandable waitlist lists per event, delete with confirmation, and client session guard. | **LIVE-TESTED** |
+| **Public Capacity Bars** | See fill level on event cards | Each card renders "N registered • X% full" with a pink/amber/rose fill bar (rose = full). | **LIVE-TESTED** |
 
 ---
 
@@ -194,9 +195,9 @@ dynamodb.meta.client.transact_write_items(
 
 - **Live Public Custom API**: `https://apikaluna.bennyduah.com/api/v1` (Healthy, HTTP 200 OK)
 - **Git State**: Clean, all changes committed and pushed to `main`.
-- **Frontend Export**: Static Next.js export (`output: 'export'`) compiled successfully into 38 pages.
+- **Frontend Export**: Static Next.js export (`output: 'export'`) compiled successfully (public pages, admin console, check-in scanner, ticket lookup, success, and self-service `/cancel`).
 - **Prod DynamoDB**: 7 events seeded (6 demo + 1 real test event). All registrations and check-ins live.
-- **Recent fixes committed**: Check-in 404 (PayloadFormatVersion), live check-in feed, per-role analytics, event delete, avatar stack live count, sparkle UI, navbar wordmark animation.
+- **Recent fixes committed**: Check-in 404 (PayloadFormatVersion), live check-in feed, per-role analytics, event delete, ticket-lookup field mapping (`ticketCode` → `ticketId`), per-event CSV export, waitlist UX, self-service cancellation, capacity bars.
 
 ---
 
@@ -228,7 +229,7 @@ dynamodb.meta.client.transact_write_items(
 - **GitHub Repository**: `https://github.com/theimaginaryangel/kaluna`
 
 ### Suggested Live Q&A / Demo Flow
-1. **Show Landing Page (`/`)**: Point out the editorial typography, category filtering, and the `AvatarStack` rendering attendee avatars.
+1. **Show Landing Page (`/`)**: Point out the editorial typography, category filtering, and the live "N going" attendance count on each event card.
 2. **Demonstrate Motion System**: Hover over event cards and buttons to show the `#FF2D87` hot pink bouncy elevation and click ripples.
 3. **Register for Event (`/events/[id]`)**: Submit a registration. Show instant validation, capacity decrement, and QR ticket generation on `/success`.
 4. **Security Proof (Terminal)**: Open terminal and run:
@@ -236,4 +237,5 @@ dynamodb.meta.client.transact_write_items(
    curl.exe -i -X POST https://apikaluna.bennyduah.com/api/v1/events
    ```
    Show the evaluator the **HTTP 401 Unauthorized** response, proving the API Gateway JWT security layer is active.
-5. **Admin Console (`/admin`)**: Log in, show the "My Events" vs "All Events" RBAC toggle tabs, capacity fill progress bars, and live check-in stream.
+5. **Admin Console (`/admin`)**: Log in, show the "My Events" vs "All Events" RBAC toggle tabs, capacity fill progress bars, per-event CSV export, checked-in badges, and the live check-in stream.
+6. **Waitlist + Cancellation (`/events/[id]` + email)**: On a sold-out waitlist-enabled event, submit a registration and land on the waitlist confirmation page. From the confirmation email, hit the "Cancel your registration" link → `/cancel` → watch the seat release and the next waitlisted attendee get auto-promoted.

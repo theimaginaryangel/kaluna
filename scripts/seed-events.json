@@ -3,7 +3,7 @@
     "PK": {"S": "EVENT#a1b2c3d4-0001-0001-0001-000000000001"},
     "SK": {"S": "METADATA"},
     "eventId": {"S": "a1b2c3d4-0001-0001-0001-000000000001"},
-    "name": {"S": "Next-Gen AI Agents and Autonomous Workflows"},
+    "name": {"S": "The Social Lives of Machines: A Reading Salon"},
     "venue": {"S": "Kaluna Main Stage (Hall A) and Online Stream"},
     "date": {"S": "2026-08-22"},
     "capacity": {"N": "150"},

@@ -2,7 +2,7 @@
 
 A serverless event registration and ticketing platform on AWS — built to replace Microsoft Forms + Excel with a real API, QR-based check-in, and a dashboard with live capacity and attendance tracking.
 
-Built as an Azubi Africa capstone, engineered like a small production system rather than a coursework assignment.
+Built as an Azubi Africa capstone, engineered as a production system.
 
 ## Status
 
@@ -19,6 +19,11 @@ Built as an Azubi Africa capstone, engineered like a small production system rat
 | 404 → SPA (S3/CloudFront error pages) | ✅ |
 | Terraform CI on push (`.github/workflows/deploy.yml`) | ✅ |
 | Frontend CD — S3 sync + CloudFront cache invalidation | ✅ |
+| Waitlist UX — join flow, waitlist confirmation page, auto-promotion, dashboard view | ✅ |
+| Self-service cancellation — `/cancel` page + link in confirmation email | ✅ |
+| Dashboard — per-event CSV export, checked-in badges, waitlisted attendees per event | ✅ |
+| Waitlist toggle in the event form | ✅ |
+| Public polish — live capacity bars on event cards | ✅ |
 
 ## Stack
 
@@ -72,6 +77,7 @@ flowchart TB
 - **Admin (Godmode)**: signs in through the admin console (Cognito JWT). Platform-wide analytics, registrations/check-ins for any event.
 - **Creator**: password-less. Identifies with an email address (`X-Creator-Email` header) stored on the client. Owns events created under that email; analytics, registrations, and check-ins are scoped to `ownerId == email`. Attempts on other owners' events return `403 FORBIDDEN`; unknown events return `404`.
 - Creators use the `/api/v1/creator/*` routes (no JWT required). Admin routes keep the Cognito JWT authorizer.
+- **Self-service cancel**: `POST /registrations/{ticketId}/cancel` and the `/cancel` page are unauthenticated — possession of the ticket ID (emailed to the attendee) is the credential, and cancelling only ever touches that one ticket.
 - Enforced in **both** the events service (`get_analytics`, `list_event_registrations`) and the check-in service (`handleGetCheckins`).
 
 ## Documentation

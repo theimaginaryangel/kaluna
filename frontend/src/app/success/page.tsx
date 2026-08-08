@@ -3,46 +3,12 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { Ticket } from '@/lib/types';
 import { api } from '@/lib/api';
 import { QRTicket } from '@/components/ui/qr-ticket';
 import { Button } from '@/components/ui/button';
 import { PinkShimmerSkeleton } from '@/components/ui/skeleton';
-import { CheckCircle2, Printer, ArrowLeft, Search, Sparkles, Hourglass } from 'lucide-react';
-
-function ConfettiBurst() {
-  const pieces = React.useMemo(
-    () =>
-      Array.from({ length: 14 }, (_, i) => {
-        const angle = (i / 14) * Math.PI * 2;
-        const distance = 60 + (i % 4) * 22;
-        return {
-          x: Math.cos(angle) * distance,
-          y: Math.sin(angle) * distance - 12,
-          size: 3 + (i % 3),
-          color: ['#FF2D87', '#FFD6E8', '#F5B14C', '#7DE0C6'][i % 4],
-          delay: (i % 5) * 0.03,
-        };
-      }),
-    []
-  );
-
-  return (
-    <span className="absolute inset-0 pointer-events-none z-10" aria-hidden>
-      {pieces.map((p, i) => (
-        <motion.span
-          key={i}
-          className="absolute rounded-full"
-          style={{ left: '50%', top: '50%', width: p.size, height: p.size, background: p.color }}
-          initial={{ x: 0, y: 0, opacity: 0, scale: 0.4 }}
-          animate={{ x: p.x, y: p.y, opacity: [0, 1, 0], scale: [0.4, 1, 0.6] }}
-          transition={{ duration: 1.1, ease: 'easeOut', delay: p.delay }}
-        />
-      ))}
-    </span>
-  );
-}
+import { CheckCircle2, Printer, ArrowLeft, Search, Hourglass } from 'lucide-react';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -84,8 +50,6 @@ function SuccessContent() {
     }
   };
 
-  const appleSpringEase = [0.25, 0.1, 0.25, 1] as const;
-
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto py-16 px-4 space-y-6">
@@ -97,19 +61,14 @@ function SuccessContent() {
 
   if (isWaitlist) {
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, ease: appleSpringEase }}
-        className="max-w-xl mx-auto px-4 py-12 space-y-8 text-center"
-      >
+      <div className="max-w-xl mx-auto px-4 py-12 space-y-8 text-center">
         <div className="space-y-3">
           <div className="w-14 h-14 rounded-full bg-[#FF2D87]/10 border border-[#FF2D87]/40 flex items-center justify-center mx-auto text-[#FF2D87]">
             <Hourglass className="w-8 h-8" />
           </div>
 
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-xs font-mono text-[#FF2D87]">
-            <Sparkles className="w-3.5 h-3.5" />
+            <Hourglass className="w-3.5 h-3.5" />
             <span>Waitlisted</span>
           </div>
 
@@ -128,7 +87,7 @@ function SuccessContent() {
             <span>Back to Events</span>
           </Button>
         </Link>
-      </motion.div>
+      </div>
     );
   }
 
@@ -159,12 +118,7 @@ function SuccessContent() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.96 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.4, ease: appleSpringEase }}
-      className="max-w-xl mx-auto px-4 py-12 space-y-8 text-center print:py-0 print:max-w-none"
-    >
+    <div className="max-w-xl mx-auto px-4 py-12 space-y-8 text-center print:py-0 print:max-w-none">
       {/* Top Banner Success Indicator */}
       <div className="space-y-3 print:hidden">
         <div className="w-14 h-14 rounded-full bg-emerald-950/80 border border-emerald-800 flex items-center justify-center mx-auto text-emerald-400">
@@ -172,7 +126,7 @@ function SuccessContent() {
         </div>
 
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-xs font-mono text-emerald-400">
-          <Sparkles className="w-3.5 h-3.5" />
+          <CheckCircle2 className="w-3.5 h-3.5" />
           <span>Registration Confirmed</span>
         </div>
 
@@ -186,11 +140,6 @@ function SuccessContent() {
 
       {/* Render QRTicket Component */}
       <div className="relative print:shadow-none">
-        <div
-          className="absolute inset-0 m-auto w-72 h-72 rounded-full bg-emerald-500/20 blur-3xl animate-pulse"
-          aria-hidden
-        />
-        <ConfettiBurst />
         <QRTicket ticket={ticket} className="mx-auto relative" />
       </div>
 
@@ -215,7 +164,7 @@ function SuccessContent() {
           </Button>
         </Link>
       </div>
-    </motion.div>
+    </div>
   );
 }
 

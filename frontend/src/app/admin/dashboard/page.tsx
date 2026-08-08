@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { AdminStats, Event, Registration } from '@/lib/types';
 import { api, isCreatorMode, getCreatorEmail, clearCreatorIdentity } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -22,7 +21,8 @@ import {
   LogOut,
   RefreshCw,
   Trash2,
-  Sparkles,
+  UserRound,
+  Mail,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -128,12 +128,14 @@ export default function AdminDashboardPage() {
         return;
       }
       const payload = token ? decodeJwtPayload(token) : null;
-      const groupsRaw = (payload?.['cognito:groups'] as string) || '';
-      const groups = groupsRaw
-        .replace(/[\[\]]/g, '')
-        .split(',')
-        .map((g) => g.trim())
-        .filter(Boolean);
+      const groupsClaim = payload?.['cognito:groups'];
+      const groups = Array.isArray(groupsClaim)
+        ? groupsClaim.map((g) => String(g).trim()).filter(Boolean)
+        : String(groupsClaim || '')
+            .replace(/[\[\]]/g, '')
+            .split(',')
+            .map((g) => g.trim())
+            .filter(Boolean);
       setUserGroups(groups);
       setCallerSub(String(payload?.['sub'] || ''));
       if (!groups.includes('Admin')) {
@@ -249,8 +251,6 @@ export default function AdminDashboardPage() {
     };
   }, [activeTab, displayedEvents, events, stats, checkIns]);
 
-  const appleSpringEase = [0.25, 0.1, 0.25, 1] as const;
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0A0A0A] text-slate-900 dark:text-slate-100 pb-24 pt-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
@@ -259,7 +259,7 @@ export default function AdminDashboardPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               {creatorMode ? (
-                <Sparkles className="w-5 h-5 text-[#FF2D87]" />
+                <UserRound className="w-5 h-5 text-[#FF2D87]" />
               ) : (
                 <ShieldCheck className="w-5 h-5 text-slate-500 dark:text-slate-400" />
               )}
@@ -274,7 +274,7 @@ export default function AdminDashboardPage() {
             </p>
             {creatorMode && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
-                <Sparkles className="w-3 h-3 text-[#FF2D87]" />
+                <Mail className="w-3 h-3 text-[#FF2D87]" />
                 {creatorEmail}
               </span>
             )}
