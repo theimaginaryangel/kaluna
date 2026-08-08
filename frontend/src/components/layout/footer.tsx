@@ -13,7 +13,10 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
           {/* Brand Col */}
-          <div className="space-y-4 md:col-span-1">
+          <div className="relative space-y-4 md:col-span-1">
+            <span className="absolute inset-0 pointer-events-none" style={{ overflow: 'visible' }}>
+              <ButterflyBurst active={dedicationHovered} />
+            </span>
             <WordmarkLink />
             <p
               className="relative w-fit text-xs text-slate-400 leading-relaxed transition-colors duration-200 hover:text-[#FF2D87]"
@@ -21,9 +24,6 @@ export function Footer() {
               onMouseLeave={() => setDedicationHovered(false)}
             >
               For Karen, moonlight.
-              <span className="absolute inset-0 pointer-events-none" style={{ overflow: 'visible' }}>
-                <ButterflyBurst active={dedicationHovered} count={3} />
-              </span>
             </p>
             <div className="flex items-center gap-3 pt-1">
               <a
