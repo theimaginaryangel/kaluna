@@ -15,8 +15,15 @@ export function Footer() {
           {/* Brand Col */}
           <div className="space-y-4 md:col-span-1">
             <WordmarkLink />
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Curated technical workshops, literary salons, and speculative discourse. Built with editorial precision.
+            <p
+              className="relative w-fit text-xs text-slate-400 leading-relaxed transition-colors duration-200 hover:text-[#FF2D87]"
+              onMouseEnter={() => setDedicationHovered(true)}
+              onMouseLeave={() => setDedicationHovered(false)}
+            >
+              For Karen, moonlight.
+              <span className="absolute inset-0 pointer-events-none" style={{ overflow: 'visible' }}>
+                <SparkleBurst active={dedicationHovered} count={3} />
+              </span>
             </p>
             <div className="flex items-center gap-3 pt-1">
               <a
@@ -110,29 +117,17 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-[#272B40]/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
           <p>© {new Date().getFullYear()} Kaluna Platform. All rights reserved.</p>
-          <div className="flex flex-col items-center sm:items-end gap-2">
-            <p
-              className="relative w-fit transition-colors duration-200 hover:text-[#FF2D87]"
-              onMouseEnter={() => setDedicationHovered(true)}
-              onMouseLeave={() => setDedicationHovered(false)}
+          <p className="flex items-center gap-1">
+            <span>Project by</span>
+            <a
+              href="https://bennyduah.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-white transition-colors"
             >
-              For Karen, moonlight.
-              <span className="absolute inset-0 pointer-events-none" style={{ overflow: 'visible' }}>
-                <SparkleBurst active={dedicationHovered} count={3} />
-              </span>
-            </p>
-            <p className="flex items-center gap-1">
-              <span>Project by</span>
-              <a
-                href="https://bennyduah.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-white transition-colors"
-              >
-                Benny Duah
-              </a>
-            </p>
-          </div>
+              Benny Duah
+            </a>
+          </p>
         </div>
       </div>
     </footer>
