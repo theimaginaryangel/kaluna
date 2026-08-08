@@ -4,7 +4,8 @@ import * as React from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Event, EventCategory, ApiError } from '@/lib/types';
-import { api, KalunaApiError } from '@/lib/api';
+import { api, KalunaApiError, isCreatorMode } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/badge';
@@ -15,12 +16,19 @@ import { EventImage } from '@/components/ui/event-image';
 import { cn } from '@/lib/utils';
 
 export default function Home() {
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = React.useState<EventCategory | 'All'>('All');
   const [events, setEvents] = React.useState<Event[]>([]);
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const [apiError, setApiError] = React.useState<ApiError | null>(null);
 
   const categories: (EventCategory | 'All')[] = ['All', 'Tech', 'Books', 'Workshop'];
+
+  const handleCreateEvent = () => {
+    const hasToken =
+      typeof window !== 'undefined' && Boolean(window.localStorage.getItem('kaluna_jwt_token'));
+    router.push(hasToken || isCreatorMode() ? '/admin/events/new' : '/admin/creator-login');
+  };
 
   const fetchEvents = React.useCallback(async (cat: EventCategory | 'All') => {
     setIsLoading(true);
@@ -62,19 +70,22 @@ export default function Home() {
           </div>
 
           <h1 className="text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tighter text-slate-900 dark:text-white uppercase leading-[0.9]">
-            Curated <br /> Technical <br /> Workshops
+            Events Worth <br /> Showing Up <br /> For.
           </h1>
 
           <p className="text-slate-600 dark:text-slate-400 text-lg sm:text-2xl font-medium max-w-2xl mx-auto leading-relaxed">
-            Discover upcoming sessions, reserve instant QR ticket passes, and check in seamlessly.
+            Tech talks, book salons, and workshops for people who read past the headline.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4 pt-8">
-            <Link href="/admin/events/new">
-              <Button variant="primary" size="lg" className="font-bold uppercase tracking-widest">
-                Post an Event
-              </Button>
-            </Link>
+            <Button
+              onClick={handleCreateEvent}
+              variant="primary"
+              size="lg"
+              className="font-bold uppercase tracking-widest"
+            >
+              Create Event
+            </Button>
             <Link href="/lookup">
               <Button variant="secondary" size="lg" className="font-bold uppercase tracking-widest">
                 Find My Ticket

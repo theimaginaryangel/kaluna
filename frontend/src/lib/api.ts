@@ -296,6 +296,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     throw new KalunaApiError(message, errorCode, response.status, errorData.details);
   }
 
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   return response.json();
 }
 
@@ -514,9 +518,14 @@ export const api = {
     }
 
     try {
+      const userPoolId = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID;
+      const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID;
+      if (!userPoolId || !clientId) {
+        throw new KalunaApiError('Cognito is not configured', 'INTERNAL_ERROR', 500);
+      }
       const pool = new CognitoUserPool({
-        UserPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us-east-1_60NhNgHlz',
-        ClientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '481citp6rarsut793ekot3mjls',
+        UserPoolId: userPoolId,
+        ClientId: clientId,
       });
 
       const user = new CognitoUser({
