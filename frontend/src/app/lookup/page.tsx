@@ -104,7 +104,7 @@ export default function TicketLookupPage() {
             Ticket Lookup & Check-In
           </h1>
           <p className="text-sm text-slate-400 max-w-md mx-auto">
-            Search by pass code (e.g. <code className="text-slate-200">KALUNA-AI-9842</code>) or attendee email address.
+            Search by pass code (e.g. KALUNA-7F3K9Q).
           </p>
         </div>
 
