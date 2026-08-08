@@ -36,12 +36,18 @@ Built as an Azubi Africa capstone, engineered like a small production system rat
 
 ```mermaid
 flowchart TB
+    Dev["Developer"] -->|"git push"| GH["GitHub Actions CI/CD<br/>test → build → terraform apply<br/>frontend build → S3 + CloudFront invalidation"]
+
     User["Attendee"] -->|"HTTPS"| CF["CloudFront + ACM cert"]
     CF --> S3["S3 static frontend"]
 
     User -->|"GET /events, /events/{id}/register"| APIGW["API Gateway /api/v1"]
     Admin["Admin (Cognito JWT)"] -->|"Dashboard, analytics, check-in feed"| APIGW
     Creator["Creator (X-Creator-Email)"] -->|"Own events, analytics, check-in feed"| APIGW
+
+    GH -->|"deploy API"| APIGW
+    GH -->|"deploy frontend"| S3
+    GH -->|"cache invalidation"| CF
 
     APIGW --> Evts["Lambda: events<br/>Python (analytics, registrations list)"]
     APIGW --> Regs["Lambda: registrations<br/>Python (register, ticket, cancel)"]

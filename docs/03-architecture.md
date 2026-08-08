@@ -31,6 +31,8 @@ Amazon SES   CloudWatch Logs/Alarms + X-Ray
  emails)     AWS Budgets (Free Tier cost tracking)
 ```
 
+Frontend CD (prod, after terraform apply): `npm run build` → `aws s3 sync` → `aws cloudfront create-invalidation --paths "/*"`
+
 ## Component roles
 
 | Component | Role |
