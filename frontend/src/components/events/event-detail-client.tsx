@@ -249,6 +249,10 @@ export function EventDetailClient({ id }: { id: string }) {
               >
                 {isSoldOut ? 'Closed' : 'Register Now'}
               </Button>
+
+              <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+                Check in at the gate with your QR pass on the day of the event.
+              </p>
             </div>
           </div>
         </div>

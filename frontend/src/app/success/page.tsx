@@ -104,7 +104,7 @@ function SuccessContent() {
           Your Digital Pass is Ready!
         </h1>
         <p className="text-sm text-slate-400 max-w-md mx-auto">
-          Present this QR pass code at the venue door for instant check-in scan.
+          Present this QR pass at the gate for instant check-in on the day.
         </p>
       </div>
 
