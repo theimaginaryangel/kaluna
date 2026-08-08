@@ -32,7 +32,7 @@ export interface Registration {
   email?: string;
   ticketCode?: string;
   registeredAt: string;
-  status: 'confirmed' | 'cancelled' | 'checked_in' | 'registered' | 'available';
+  status: 'confirmed' | 'cancelled' | 'checked_in' | 'registered' | 'waitlisted' | 'available';
 }
 
 export interface Ticket {

@@ -79,6 +79,18 @@ export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
 
       const passCode = result.ticketCode || result.ticketId || '';
 
+      if (result.status === 'waitlisted') {
+        const queryParams = new URLSearchParams({
+          waitlist: '1',
+          eventId: event.id || event.eventId || '',
+        });
+        if (onSuccess) {
+          onSuccess(passCode);
+        }
+        router.push(`/success/?${queryParams.toString()}`);
+        return;
+      }
+
       if (onSuccess) {
         onSuccess(passCode);
       }
@@ -126,6 +138,8 @@ export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
   };
 
   const isSoldOut = event.status === 'Sold Out' || remainingSpots <= 0;
+  const waitlistOpen = isSoldOut && Boolean(event.waitlistEnabled);
+  const formLocked = isSoldOut && !waitlistOpen;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -151,7 +165,7 @@ export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
         onChange={(e) => setUserName(e.target.value)}
         error={userNameError}
         icon={<User className="w-4 h-4" />}
-        disabled={isSubmitting || isSoldOut}
+        disabled={isSubmitting || formLocked}
       />
 
       {/* Email Input */}
@@ -164,7 +178,7 @@ export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
         error={userEmailError}
         helperText="Your digital QR pass code will be linked to this email."
         icon={<Mail className="w-4 h-4" />}
-        disabled={isSubmitting || isSoldOut}
+        disabled={isSubmitting || formLocked}
       />
 
       {/* Note: Ticket quantity is enforced to 1 per person on the backend */}
@@ -177,10 +191,16 @@ export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
           size="lg"
           className="w-full justify-center font-bold"
           isLoading={isSubmitting}
-          disabled={isSoldOut}
+          disabled={formLocked}
         >
-          {isSoldOut ? 'Event Sold Out' : 'Confirm Registration'}
+          {isSoldOut ? (waitlistOpen ? 'Join Waitlist' : 'Event Sold Out') : 'Confirm Registration'}
         </Button>
+
+        {waitlistOpen && (
+          <p className="mt-3 text-xs text-slate-400 text-center">
+            Event is full — joining the waitlist emails you the moment a spot opens.
+          </p>
+        )}
       </div>
     </form>
   );

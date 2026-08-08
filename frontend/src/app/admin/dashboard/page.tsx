@@ -50,10 +50,13 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = React.useState<AdminStats | null>(null);
   const [events, setEvents] = React.useState<Event[]>([]);
   const [checkIns, setCheckIns] = React.useState<Registration[]>([]);
+  const [checkInStats, setCheckInStats] = React.useState<Record<string, { checkedIn: number; total: number }>>({});
+  const [waitlistByEvent, setWaitlistByEvent] = React.useState<Record<string, Registration[]>>({});
   const [isLoading, setIsLoading] = React.useState(true);
   const [isExporting, setIsExporting] = React.useState(false);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
   const [activeTab, setActiveTab] = React.useState<'my-events' | 'all-events'>('my-events');
+  const [expandedWaitlist, setExpandedWaitlist] = React.useState<string | null>(null);
   const [loadError, setLoadError] = React.useState<string | null>(null);
   const [userGroups, setUserGroups] = React.useState<string[]>([]);
   const [callerSub, setCallerSub] = React.useState('');
@@ -83,6 +86,32 @@ export default function AdminDashboardPage() {
         .sort((a, b) => (b.registeredAt > a.registeredAt ? 1 : -1))
         .slice(0, 20);
       setCheckIns(allAttendees);
+
+      // Per-event check-in stats for the checked-in badge
+      const statsMap: Record<string, { checkedIn: number; total: number }> = {};
+      checkInResults.forEach((r, idx) => {
+        const ev = eventsList[idx];
+        if (r.status === 'fulfilled') {
+          statsMap[ev.eventId || ev.id] = { checkedIn: r.value.checkedIn, total: r.value.total };
+        }
+      });
+      setCheckInStats(statsMap);
+
+      // Per-event registrations → waitlisted users shown under each event
+      const registrationResults = await Promise.allSettled(
+        eventsList.map((e) => api.getRegistrations(e.eventId || e.id))
+      );
+      const waitlistMap: Record<string, Registration[]> = {};
+      registrationResults.forEach((r, idx) => {
+        const ev = eventsList[idx];
+        if (r.status === 'fulfilled') {
+          const waitlisted = r.value.filter((reg) => reg.status === 'waitlisted');
+          if (waitlisted.length > 0) {
+            waitlistMap[ev.eventId || ev.id] = waitlisted;
+          }
+        }
+      });
+      setWaitlistByEvent(waitlistMap);
     } catch (err) {
       console.error('Failed to load admin stats', err);
       setLoadError(err instanceof Error ? err.message : 'Failed to load dashboard data.');
@@ -141,20 +170,29 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleExportCSV = async () => {
+  const handleExportCSV = async (eventId?: string) => {
     setIsExporting(true);
     try {
-      const registrations = await api.getRegistrations(events[0]?.id);
+      const targets = eventId
+        ? displayedEvents.filter((e) => (e.eventId || e.id) === eventId)
+        : displayedEvents;
       const csvHeaders = ['Registration ID', 'Event Title', 'Attendee Name', 'Attendee Email', 'Ticket Code', 'Status', 'Registered At'];
-      const csvRows = registrations.map((r) => [
-        `"${r.id}"`,
-        `"${r.eventTitle || r.eventId}"`,
-        `"${r.userName || r.name || ''}"`,
-        `"${r.userEmail || r.email || ''}"`,
-        `"${r.ticketCode || ''}"`,
-        `"${r.status}"`,
-        `"${r.registeredAt}"`,
-      ]);
+      const csvRows: string[][] = [];
+      for (const ev of targets) {
+        const registrations = await api.getRegistrations(ev.eventId || ev.id);
+        const eventTitle = ev.name || ev.title || ev.eventId;
+        registrations.forEach((r) =>
+          csvRows.push([
+            `"${r.id}"`,
+            `"${r.eventTitle || eventTitle}"`,
+            `"${r.userName || r.name || ''}"`,
+            `"${r.userEmail || r.email || ''}"`,
+            `"${r.ticketCode || ''}"`,
+            `"${r.status}"`,
+            `"${r.registeredAt}"`,
+          ])
+        );
+      }
 
       const csvContent = [csvHeaders.join(','), ...csvRows.map((e) => e.join(','))].join('\n');
 
@@ -256,7 +294,7 @@ export default function AdminDashboardPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleExportCSV}
+              onClick={() => handleExportCSV()}
               isLoading={isExporting}
               className="gap-2 text-xs"
             >
@@ -424,10 +462,15 @@ export default function AdminDashboardPage() {
               ) : (
                 <div className="space-y-5">
                   {displayedEvents.map((event) => {
+                    const eventKey = event.eventId || event.id;
                     const fillPercent = Math.min(
                       100,
                       Math.round(((event.capacity - event.seatsRemaining) / (event.capacity || 1)) * 100)
                     );
+                    const registeredCount = Math.max(0, event.capacity - event.seatsRemaining);
+                    const checkStat = checkInStats[eventKey];
+                    const waitlisted = waitlistByEvent[eventKey] || [];
+                    const isWaitlistOpen = expandedWaitlist === eventKey;
                     return (
                       <div
                         key={event.id || event.eventId}
@@ -442,7 +485,7 @@ export default function AdminDashboardPage() {
 
                           <div className="flex items-center gap-3">
                             <span className="text-xs font-mono text-slate-600 dark:text-slate-300">
-                              {Math.max(0, event.capacity - event.seatsRemaining)} / {event.capacity} ({fillPercent}%)
+                              {registeredCount} / {event.capacity} ({fillPercent}%)
                             </span>
                             <div className="flex items-center gap-2">
                             <Link href={`/admin/events/edit?id=${event.id || event.eventId}`}>
@@ -451,6 +494,17 @@ export default function AdminDashboardPage() {
                                 <span>Edit</span>
                               </Button>
                             </Link>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleExportCSV(event.eventId || event.id)}
+                              isLoading={isExporting}
+                              className="h-7 px-2 text-xs gap-1 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800"
+                              title={`Export ${event.name || event.title} registrations`}
+                            >
+                              <Download className="w-3 h-3" />
+                              <span>CSV</span>
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -464,6 +518,47 @@ export default function AdminDashboardPage() {
                             </div>
                           </div>
                         </div>
+
+                        {/* Live badge: checked-in vs registered */}
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
+                          {checkStat && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                              <CheckCircle2 className="w-3 h-3" />
+                              {checkStat.checkedIn} checked in / {registeredCount} registered
+                            </span>
+                          )}
+                          {waitlisted.length > 0 && (
+                            <button
+                              onClick={() => setExpandedWaitlist(isWaitlistOpen ? null : eventKey)}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FF2D87]/10 border border-[#FF2D87]/30 text-[#FF2D87] hover:bg-[#FF2D87]/20 transition-colors"
+                            >
+                              <Users className="w-3 h-3" />
+                              {waitlisted.length} on waitlist
+                              <span className="text-[9px]">{isWaitlistOpen ? '▴' : '▾'}</span>
+                            </button>
+                          )}
+                        </div>
+
+                        {isWaitlistOpen && waitlisted.length > 0 && (
+                          <div className="space-y-1.5 border border-[#FF2D87]/20 rounded-lg p-3 bg-[#FF2D87]/[0.03]">
+                            <p className="text-[10px] uppercase tracking-wider font-mono font-bold text-[#FF2D87]/80">
+                              Waitlisted Attendees
+                            </p>
+                            {waitlisted.map((wl) => (
+                              <div
+                                key={wl.ticketId || wl.id}
+                                className="flex items-center justify-between text-xs gap-2"
+                              >
+                                <span className="text-slate-900 dark:text-white font-medium truncate">
+                                  {wl.userName || wl.name}
+                                </span>
+                                <span className="text-slate-500 dark:text-slate-400 truncate">
+                                  {wl.userEmail || wl.email}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
 
                         {/* Capacity Bar */}
                         <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800">

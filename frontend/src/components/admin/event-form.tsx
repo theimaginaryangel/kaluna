@@ -7,6 +7,7 @@ import { api, KalunaApiError } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AlertCircle, Calendar, MapPin, User, Users, DollarSign, Image as ImageIcon, Tag, FileText } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface EventFormProps {
   initialEvent?: Event;
@@ -24,6 +25,7 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
   const [speakerName, setSpeakerName] = React.useState('');
   const [speakerRole, setSpeakerRole] = React.useState('');
   const [capacity, setCapacity] = React.useState<number>(initialEvent?.capacity || 100);
+  const [waitlistEnabled, setWaitlistEnabled] = React.useState<boolean>(initialEvent?.waitlistEnabled ?? false);
   const [price, setPrice] = React.useState<number>(0);
   const [imageUrl, setImageUrl] = React.useState(initialEvent?.imageUrl || '');
   const [description, setDescription] = React.useState('');
@@ -63,6 +65,7 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
       venue: location.trim(),
       location: location.trim(),
       capacity: Number(capacity),
+      waitlistEnabled,
       imageUrl: imageUrl.trim(),
     };
 
@@ -205,6 +208,37 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
           icon={<Users className="w-4 h-4" />}
           disabled={isSubmitting}
         />
+
+        {/* Waitlist Toggle */}
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-4 py-3">
+          <div className="space-y-0.5">
+            <label htmlFor="waitlist-toggle" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              Waitlist
+            </label>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              When full, attendees can join a waitlist and get promoted as seats free up.
+            </p>
+          </div>
+          <button
+            id="waitlist-toggle"
+            type="button"
+            role="switch"
+            aria-checked={waitlistEnabled}
+            onClick={() => setWaitlistEnabled((v) => !v)}
+            disabled={isSubmitting}
+            className={cn(
+              'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 disabled:opacity-50',
+              waitlistEnabled ? 'bg-[#FF2D87]' : 'bg-slate-300 dark:bg-slate-700'
+            )}
+          >
+            <span
+              className={cn(
+                'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200',
+                waitlistEnabled ? 'translate-x-6' : 'translate-x-1'
+              )}
+            />
+          </button>
+        </div>
 
         {/* Price */}
         <Input

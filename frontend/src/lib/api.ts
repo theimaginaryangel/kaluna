@@ -185,6 +185,10 @@ function buildEventApiPayload(eventData: Partial<Event>): Record<string, unknown
     payload.capacity = capacity;
   }
 
+  if (typeof eventData.waitlistEnabled === 'boolean') {
+    payload.waitlistEnabled = eventData.waitlistEnabled;
+  }
+
   if (eventData.imageUrl !== undefined) {
     payload.imageUrl = eventData.imageUrl.trim();
   }
@@ -646,10 +650,29 @@ export const api = {
   },
 
   /**
+   * Cancel a registration and release the seat (self-service from the email link)
+   */
+  async cancelRegistration(ticketId: string): Promise<{ message: string }> {
+    try {
+      const payload = await request<{ message?: string }>(
+        `/api/v1/registrations/${encodeURIComponent(ticketId)}/cancel`,
+        { method: 'POST' }
+      );
+      return { message: payload?.message || 'Registration cancelled successfully.' };
+    } catch (err) {
+      if (err instanceof KalunaApiError) throw err;
+      throw new KalunaApiError(
+        (err as Error)?.message || 'Failed to cancel registration',
+        'INTERNAL_ERROR',
+        500
+      );
+    }
+  },
+
+  /**
    * Get Registrations list (Admin / CSV)
    */
-  async getRegistrations(eventId?: string): Promise<Registration[]> {
-    if (!eventId) {
+  async getRegistrations(eventId?: string): Promise<Registration[]> {    if (!eventId) {
       return [];
     }
 

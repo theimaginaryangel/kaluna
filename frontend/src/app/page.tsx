@@ -64,7 +64,13 @@ export default function Home() {
     <div className="min-h-screen pb-24 bg-white dark:bg-[#1C1C1E] transition-colors duration-300">
       {/* Editorial Hero Section */}
       <section className="pt-24 pb-20 border-b border-slate-100 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.7, ease: appleSpringEase }}
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8"
+        >
           <div className="inline-block px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-full text-sm font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
             Kaluna Editorial Events
           </div>
@@ -92,7 +98,7 @@ export default function Home() {
               </Button>
             </Link>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Main Catalog & Filter Section */}
@@ -100,7 +106,15 @@ export default function Home() {
         {/* Interactive Category Filter Bar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border-b-2 border-slate-200 dark:border-slate-800 pb-8">
           <div>
-            <h2 className="text-4xl font-bold text-slate-900 dark:text-white tracking-tighter uppercase">Explore</h2>
+            <motion.h2
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.4 }}
+              transition={{ duration: 0.6, ease: appleSpringEase }}
+              className="text-4xl font-bold text-slate-900 dark:text-white tracking-tighter uppercase"
+            >
+              Explore
+            </motion.h2>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -195,7 +209,10 @@ export default function Home() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
             <AnimatePresence mode="popLayout">
-              {events.map((event) => (
+              {events.map((event) => {
+                const registered = Math.max(0, event.capacity - event.seatsRemaining);
+                const fillPercent = Math.min(100, Math.round((registered / (event.capacity || 1)) * 100));
+                return (
                 <motion.div
                   key={event.id || event.eventId}
                   layout
@@ -248,7 +265,26 @@ export default function Home() {
                     </div>
 
                     <CardFooter className="pt-6 pb-6 flex-col items-start gap-4">
-                      <AvatarStack registeredCount={Math.max(0, event.capacity - event.seatsRemaining)} className="w-full" />
+                      <div className="w-full space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                          <span>{registered} registered</span>
+                          <span>{fillPercent}% full</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                          <div
+                            className={cn(
+                              'h-full rounded-full transition-all duration-500',
+                              fillPercent >= 100
+                                ? 'bg-rose-500'
+                                : fillPercent >= 80
+                                ? 'bg-amber-500'
+                                : 'bg-[#FF2D87]'
+                            )}
+                            style={{ width: `${fillPercent}%` }}
+                          />
+                        </div>
+                      </div>
+                      <AvatarStack registeredCount={registered} className="w-full" />
                       <div className="flex items-center justify-between w-full border-t-2 border-slate-100 dark:border-slate-800 pt-6">
                         <span className="text-lg font-bold font-mono text-slate-900 dark:text-white">
                           {event.seatsRemaining > 0 ? `${event.seatsRemaining} spots left` : 'Sold out'}
@@ -263,7 +299,8 @@ export default function Home() {
                     </CardFooter>
                   </Card>
                 </motion.div>
-              ))}
+                );
+              })}
             </AnimatePresence>
           </motion.div>
         )}

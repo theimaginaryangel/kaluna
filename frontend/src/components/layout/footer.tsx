@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Github, Linkedin, Globe } from 'lucide-react';
+import { Github, Linkedin, Globe, Moon } from 'lucide-react';
 import { WordmarkLink } from '@/components/layout/wordmark-link';
 import { ButterflyBurst } from '@/components/ui/butterfly-burst';
 
@@ -24,6 +24,10 @@ export function Footer() {
               onMouseLeave={() => setDedicationHovered(false)}
             >
               For Karen, moonlight.
+              <Moon
+                className="inline-block w-3.5 h-3.5 ml-1.5 mb-[3px] text-[#FF2D87]/80"
+                aria-hidden
+              />
             </p>
             <div className="flex items-center gap-3 pt-1">
               <a

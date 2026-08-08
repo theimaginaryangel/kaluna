@@ -89,6 +89,7 @@ def send_ticket_email(email_addr: str, name: str, ticket_id: str, event_item: di
             <p>Your Ticket ID is: <strong>{ticket_id}</strong></p>
             <p>Please present the QR code below at check-in:</p>
             <img src="{qr_url}" alt="Ticket QR Code" />
+            <p><small>Need to cancel? <a href="https://kaluna.bennyduah.com/cancel?code={ticket_id}">Cancel your registration</a> to release your seat.</small></p>
         </body>
         </html>
         """
