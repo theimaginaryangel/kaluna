@@ -13,6 +13,11 @@ output "frontend_domain_name" {
   value       = "https://${"kaluna.bennyduah.com"}"
 }
 
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID for the prod frontend"
+  value       = module.frontend.cloudfront_distribution_id
+}
+
 output "frontend_bucket_name" {
   description = "S3 bucket hosting the built frontend"
   value       = module.frontend.bucket_name

@@ -18,6 +18,7 @@ Built as an Azubi Africa capstone, engineered like a small production system rat
 | Custom domain (CloudFront + ACM cert) | ✅ |
 | 404 → SPA (S3/CloudFront error pages) | ✅ |
 | Terraform CI on push (`.github/workflows/deploy.yml`) | ✅ |
+| Frontend CD — S3 sync + CloudFront cache invalidation | ✅ |
 
 ## Stack
 
@@ -98,6 +99,21 @@ openapi.yaml      API contract
 .github/workflows CI/CD pipeline
 ```
 
+## GitHub Actions secrets
+
+CI/CD reads all configuration from repository secrets — nothing is hardcoded in the pipeline or the frontend source. Add these under **Settings → Secrets and variables → Actions**:
+
+| Secret | Purpose | Value source |
+|---|---|---|
+| `AWS_ACCESS_KEY_ID` | AWS CLI auth for Terraform + deploy | Your IAM user |
+| `AWS_SECRET_ACCESS_KEY` | AWS CLI auth for Terraform + deploy | Your IAM user |
+| `CLOUDFRONT_DISTRIBUTION_ID` | CloudFront cache invalidation target | `terraform output cloudfront_distribution_id` (prod) |
+| `NEXT_PUBLIC_API_URL` | Frontend build: API base URL | `https://apikaluna.bennyduah.com` |
+| `NEXT_PUBLIC_COGNITO_USER_POOL_ID` | Frontend build: Cognito pool | Your prod user pool ID |
+| `NEXT_PUBLIC_COGNITO_CLIENT_ID` | Frontend build: Cognito app client | Your prod app client ID |
+
+The `NEXT_PUBLIC_*` values are inlined into the static export at build time. `.env` is gitignored — see [`frontend/.env.example`](frontend/.env.example) for the required keys.
+
 ## Quick Start (Deployment)
 
 1. **Authenticate with AWS**: Ensure your AWS CLI is configured with an IAM user that has administrative privileges.
@@ -119,7 +135,9 @@ openapi.yaml      API contract
 5. **Build & deploy frontend** (prod):
    ```bash
    cd frontend
-   npm run build        # static export → out/
+   cp .env.example .env   # set NEXT_PUBLIC_API_URL + Cognito vars (CI injects these from secrets)
+   npm run build          # static export → out/
    aws s3 sync out/ s3://<YOUR_BUCKET> --delete
+   aws cloudfront create-invalidation --distribution-id <YOUR_DIST_ID> --paths "/*"
    ```
 6. **Test**: Hit `/api/v1/health` to verify the API is live.
