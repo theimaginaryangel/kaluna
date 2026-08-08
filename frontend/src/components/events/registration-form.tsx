@@ -77,12 +77,14 @@ export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
         userEmail: userEmail.trim(),
       });
 
+      const passCode = result.ticketCode || result.ticketId || '';
+
       if (onSuccess) {
-        onSuccess(result.ticket.ticketCode);
+        onSuccess(passCode);
       }
 
       const queryParams = new URLSearchParams({
-        code: result.ticket.ticketCode,
+        code: passCode,
         eventId: event.id || event.eventId || '',
       });
 

@@ -81,7 +81,11 @@ function normalizeRegistration(payload: Record<string, unknown>): Registration {
     name: userName,
     userEmail,
     email: userEmail,
-    ticketCode: payload.ticketCode ? String(payload.ticketCode) : undefined,
+    ticketCode: payload.ticketCode
+      ? String(payload.ticketCode)
+      : payload.ticketId
+      ? String(payload.ticketId)
+      : undefined,
     registeredAt: String(payload.registeredAt || ''),
     status: (payload.status as Registration['status']) || 'registered',
   };
@@ -385,13 +389,13 @@ export const api = {
     eventId: string;
     userName: string;
     userEmail: string;
-  }): Promise<{ registration: Registration; ticket: Ticket }> {
+  }): Promise<Registration> {
     if (!data.userName || !data.userEmail) {
       throw new KalunaApiError('Name and email are required', 'VALIDATION_ERROR', 400);
     }
 
     try {
-      return await request<{ registration: Registration; ticket: Ticket }>(
+      const payload = await request<Record<string, unknown>>(
         `/api/v1/events/${data.eventId}/register`,
         {
           method: 'POST',
@@ -402,6 +406,7 @@ export const api = {
           }),
         }
       );
+      return normalizeRegistration(payload);
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
       throw new KalunaApiError(
