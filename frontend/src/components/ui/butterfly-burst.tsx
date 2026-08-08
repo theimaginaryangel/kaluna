@@ -9,12 +9,12 @@ interface ButterflyBurstProps {
 }
 
 // Offsets are relative to the LEFT edge of the text, so butterflies hover
-// beside the dedication rather than on top of it.
+// clearly beside the dedication rather than on top of it.
 const OFFSETS = [
-  { x: -18, y: -22 },
-  { x: -36, y: -6 },
-  { x: -12, y: 12 },
-  { x: -30, y: 16 },
+  { x: -30, y: -22 },
+  { x: -50, y: -6 },
+  { x: -26, y: 12 },
+  { x: -46, y: 16 },
 ];
 
 function FlutteringButterfly({ size = 18, phase = 0 }: { size?: number; phase?: number }) {
