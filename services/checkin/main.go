@@ -271,20 +271,21 @@ func handleGetCheckins(ctx context.Context, req events.APIGatewayV2HTTPRequest, 
 	})
 }
 
-func callerClaims(req events.APIGatewayV2HTTPRequest) map[string]string {
-	if req.RequestContext.Authorizer == nil || req.RequestContext.Authorizer.JWT == nil {
+func callerClaims(req events.APIGatewayV2HTTPRequest) map[string]interface{} {
+	if req.RequestContext.Authorizer == nil {
 		return nil
 	}
-	return req.RequestContext.Authorizer.JWT.Claims
-}
-
-func creatorEmail(req events.APIGatewayV2HTTPRequest) string {
-	for k, v := range req.Headers {
-		if strings.EqualFold(k, "X-Creator-Email") {
-			return strings.ToLower(strings.TrimSpace(v))
+	if req.RequestContext.Authorizer.JWT != nil {
+		claims := make(map[string]interface{})
+		for k, v := range req.RequestContext.Authorizer.JWT.Claims {
+			claims[k] = v
 		}
+		return claims
 	}
-	return ""
+	if req.RequestContext.Authorizer.Lambda != nil {
+		return req.RequestContext.Authorizer.Lambda
+	}
+	return nil
 }
 
 func eventOwnerID(ctx context.Context, eventID string) string {
@@ -314,7 +315,9 @@ func isAdminOrOwner(ctx context.Context, req events.APIGatewayV2HTTPRequest, eve
 
 	groupsRaw := ""
 	if claims != nil {
-		groupsRaw = claims["cognito:groups"]
+		if g, ok := claims["cognito:groups"].(string); ok {
+			groupsRaw = g
+		}
 	}
 	for _, group := range strings.Split(strings.Trim(groupsRaw, "[]"), ",") {
 		if strings.TrimSpace(group) == "Admin" {
@@ -327,14 +330,11 @@ func isAdminOrOwner(ctx context.Context, req events.APIGatewayV2HTTPRequest, eve
 		return false
 	}
 
-	// Email-based creator identity (password-less)
-	if email := creatorEmail(req); email != "" {
-		return owner == email
-	}
-
 	sub := ""
 	if claims != nil {
-		sub = claims["sub"]
+		if s, ok := claims["sub"].(string); ok {
+			sub = s
+		}
 	}
 	return owner == sub
 }

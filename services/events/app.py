@@ -63,29 +63,21 @@ def get_user_context(event: dict):
     authorizer = event.get('requestContext', {}).get('authorizer', {})
     claims = authorizer.get('jwt', {}).get('claims', {}) if 'jwt' in authorizer else authorizer.get('claims', {})
     
+    # Check for custom Lambda authorizer claims
+    if not claims and 'lambda' in authorizer:
+        claims = authorizer.get('lambda', {})
+    
     groups = claims.get('cognito:groups', [])
     if isinstance(groups, str):
         groups = groups.replace('[', '').replace(']', '').split(',')
     
     user_groups = [g.strip() for g in groups if g.strip()] if groups else []
     
-    # Password-less creator identity: X-Creator-Email header (lowercased).
-    headers = {k.lower(): v for k, v in (event.get('headers') or {}).items()}
-    creator_email = (headers.get('x-creator-email') or '').strip().lower()
-    
-    if creator_email:
-        return {
-            'caller_id': creator_email,
-            'is_admin': False,
-            'is_creator': True,
-            'creator_email': creator_email
-        }
-    
     return {
         'caller_id': claims.get('sub', 'unknown'),
         'is_admin': 'Admin' in user_groups,
         'is_creator': 'Creator' in user_groups,
-        'creator_email': ''
+        'creator_email': claims.get('sub', '') if 'Creator' in user_groups else ''
     }
 
 def lambda_handler(event: dict, context) -> dict:

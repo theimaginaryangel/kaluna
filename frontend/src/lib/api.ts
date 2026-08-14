@@ -8,7 +8,6 @@ import {
   ApiError,
   ApiErrorCode,
 } from './types';
-import { AuthenticationDetails, CognitoUser, CognitoUserPool } from 'amazon-cognito-identity-js';
 
 export class KalunaApiError extends Error implements ApiError {
   errorCode: ApiErrorCode | string;
@@ -209,36 +208,35 @@ function getAuthHeader(): Record<string, string> {
   return { Authorization: `Bearer ${token}` };
 }
 
+function getJwtPayload(): Record<string, any> | null {
+  if (typeof window === 'undefined') return null;
+  const token = window.localStorage.getItem('kaluna_jwt_token');
+  if (!token) return null;
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch (e) {
+    return null;
+  }
+}
+
 export function getCreatorEmail(): string {
-  if (typeof window === 'undefined') {
-    return '';
-  }
-  return (window.localStorage.getItem('kaluna_creator_email') || '').trim();
-}
-
-export function setCreatorEmail(email: string): void {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  window.localStorage.setItem('kaluna_creator_email', email.trim().toLowerCase());
-  window.localStorage.removeItem('kaluna_jwt_token');
-  window.localStorage.removeItem('kaluna_admin_user');
-}
-
-export function clearCreatorIdentity(): void {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  window.localStorage.removeItem('kaluna_creator_email');
+  const payload = getJwtPayload();
+  return payload?.sub || '';
 }
 
 export function isCreatorMode(): boolean {
-  return getCreatorEmail() !== '';
+  const payload = getJwtPayload();
+  const groups = payload?.['cognito:groups'] || [];
+  return Array.isArray(groups) ? groups.includes('Creator') : groups === 'Creator';
 }
 
-function creatorScopedEventsPath(suffix: string): string {
-  return isCreatorMode() ? `/api/v1/creator/events${suffix}` : `/api/v1/events${suffix}`;
+export function isAdminMode(): boolean {
+  const payload = getJwtPayload();
+  const groups = payload?.['cognito:groups'] || [];
+  return Array.isArray(groups) ? groups.includes('Admin') : groups === 'Admin';
 }
+
+
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const baseUrl = getApiUrl();
@@ -256,11 +254,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers.set('Authorization', authHeader.Authorization);
   }
 
-  // Password-less creator identity: attach email to creator-scoped endpoints.
-  const creatorEmail = getCreatorEmail();
-  if (creatorEmail && endpoint.includes('/api/v1/creator/')) {
-    headers.set('X-Creator-Email', creatorEmail);
-  }
+
 
   const response = await fetch(new URL(endpoint, baseUrl).toString(), {
     ...options,
@@ -333,7 +327,7 @@ export const api = {
       }
 
       const queryString = searchParams.toString();
-      const endpoint = `${creatorScopedEventsPath('')}${queryString ? `?${queryString}` : ''}`;
+      const endpoint = `${'/api/v1/events'}${queryString ? `?${queryString}` : ''}`;
       const payload = await request<unknown>(endpoint);
       const rawEvents = unwrapListResponse<unknown[]>(payload);
 
@@ -374,7 +368,7 @@ export const api = {
    */
   async getEventById(id: string): Promise<Event> {
     try {
-      const payload = await request<unknown>(creatorScopedEventsPath(`/${id}`));
+      const payload = await request<unknown>(`/api/v1/events/${id}`);
       return normalizeEvent(payload as Record<string, unknown>);
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
@@ -506,7 +500,7 @@ export const api = {
    */
   async getAdminStats(): Promise<AdminStats> {
     try {
-      const payload = await request<unknown>(isCreatorMode() ? '/api/v1/creator/analytics' : '/api/v1/analytics');
+      const payload = await request<unknown>('/api/v1/analytics');
       return normalizeAdminStats(payload as Record<string, unknown>);
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
@@ -519,7 +513,7 @@ export const api = {
   },
 
   /**
-   * Admin Login (Cognito / JWT)
+   * Admin Login (Custom Auth)
    */
   async login(username: string, password: string): Promise<{ token: string; username: string }> {
     if (!username || !password) {
@@ -527,44 +521,21 @@ export const api = {
     }
 
     try {
-      const userPoolId = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID;
-      const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID;
-      if (!userPoolId || !clientId) {
-        throw new KalunaApiError('Cognito is not configured', 'INTERNAL_ERROR', 500);
+      const response = await fetch(`${getApiUrl()}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: username, password }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new KalunaApiError(data.message || 'Authentication failed', 'UNAUTHORIZED', response.status);
       }
-      const pool = new CognitoUserPool({
-        UserPoolId: userPoolId,
-        ClientId: clientId,
-      });
 
-      const user = new CognitoUser({
-        Username: username,
-        Pool: pool,
-      });
-
-      user.setAuthenticationFlowType('USER_PASSWORD_AUTH');
-
-      const authenticationDetails = new AuthenticationDetails({
-        Username: username,
-        Password: password,
-      });
-
-      return await new Promise<{ token: string; username: string }>((resolve, reject) => {
-        user.authenticateUser(authenticationDetails, {
-          onSuccess: (result) => {
-            resolve({
-              token: result.getIdToken().getJwtToken(),
-              username,
-            });
-          },
-          onFailure: (err) => {
-            reject(new KalunaApiError(err.message || 'Invalid credentials', 'UNAUTHORIZED', 401));
-          },
-          newPasswordRequired: () => {
-            reject(new KalunaApiError('A new password is required', 'UNAUTHORIZED', 401));
-          },
-        });
-      });
+      return {
+        token: data.token,
+        username: data.user.email,
+      };
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
       throw new KalunaApiError(
@@ -576,13 +547,44 @@ export const api = {
   },
 
   /**
+   * Admin Register (Custom Auth)
+   */
+  async register(name: string, email: string, password: string): Promise<{ email: string }> {
+    if (!name || !email || !password) {
+      throw new KalunaApiError('Name, email, and password are required', 'VALIDATION_ERROR', 400);
+    }
+
+    try {
+      const response = await fetch(`${getApiUrl()}/api/v1/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new KalunaApiError(data.message || 'Registration failed', data.errorCode || 'INTERNAL_ERROR', response.status);
+      }
+
+      return { email: data.email };
+    } catch (err) {
+      if (err instanceof KalunaApiError) throw err;
+      throw new KalunaApiError(
+        (err as Error)?.message || 'Registration failed',
+        'INTERNAL_ERROR',
+        500
+      );
+    }
+  },
+
+  /**
    * Create new Event (Admin)
    */
   async createEvent(eventData: Partial<Event>): Promise<Event> {
     const payload = buildEventApiPayload(eventData);
 
     try {
-      const created = await request<unknown>(creatorScopedEventsPath(''), {
+      const created = await request<unknown>('/api/v1/events', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
@@ -604,7 +606,7 @@ export const api = {
     const payload = buildEventApiPayload(eventData);
 
     try {
-      const updated = await request<unknown>(creatorScopedEventsPath(`/${id}`), {
+      const updated = await request<unknown>(`/api/v1/events/${id}`, {
         method: 'PUT',
         body: JSON.stringify(payload),
       });
@@ -624,7 +626,7 @@ export const api = {
    */
   async deleteEvent(id: string): Promise<void> {
     try {
-      await request<unknown>(creatorScopedEventsPath(`/${id}`), { method: 'DELETE' });
+      await request<unknown>(`/api/v1/events/${id}`, { method: 'DELETE' });
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
       throw new KalunaApiError(
@@ -640,7 +642,7 @@ export const api = {
    */
   async getCheckIns(eventId: string): Promise<{ checkedIn: number; total: number; attendees: Registration[] }> {
     const payload = await request<{ checkedIn: number; total: number; attendees: unknown[] }>(
-      creatorScopedEventsPath(`/${encodeURIComponent(eventId)}/check-ins`)
+      `/api/v1/events/${encodeURIComponent(eventId)}/check-ins`
     );
     return {
       checkedIn: payload.checkedIn,
@@ -677,7 +679,7 @@ export const api = {
     }
 
     try {
-      const payload = await request<unknown>(creatorScopedEventsPath(`/${encodeURIComponent(eventId)}/registrations`));
+      const payload = await request<unknown>(`/api/v1/events/${encodeURIComponent(eventId)}/registrations`);
       const registrations = unwrapListResponse<unknown[]>(payload);
       return (Array.isArray(registrations) ? registrations : []).map((entry) => normalizeRegistration(entry as Record<string, unknown>));
     } catch (err) {

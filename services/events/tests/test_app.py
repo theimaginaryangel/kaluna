@@ -571,8 +571,15 @@ def test_list_event_registrations_csv_format(setup_table, dynamodb_client):
 
 def make_creator_event(method: str, path: str, email: str = 'creator@example.com'):
     return {
-        'requestContext': {'http': {'method': method, 'path': path}},
-        'headers': {'X-Creator-Email': email}
+        'requestContext': {
+            'http': {'method': method, 'path': path},
+            'authorizer': {
+                'lambda': {
+                    'sub': email,
+                    'cognito:groups': ['Creator']
+                }
+            }
+        }
     }
 
 

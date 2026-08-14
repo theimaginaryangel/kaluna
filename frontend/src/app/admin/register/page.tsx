@@ -7,15 +7,17 @@ import { api, KalunaApiError } from '@/lib/api';
 import { ApiError } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ShieldCheck, User, Lock, AlertCircle } from 'lucide-react';
+import { ShieldCheck, User, Lock, AlertCircle, Mail } from 'lucide-react';
 
-export default function AdminLoginPage() {
+export default function AdminRegisterPage() {
   const router = useRouter();
 
-  const [username, setUsername] = React.useState('');
+  const [name, setName] = React.useState('');
+  const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
 
-  const [usernameError, setUsernameError] = React.useState('');
+  const [nameError, setNameError] = React.useState('');
+  const [emailError, setEmailError] = React.useState('');
   const [passwordError, setPasswordError] = React.useState('');
 
   const [apiError, setApiError] = React.useState<ApiError | null>(null);
@@ -23,15 +25,25 @@ export default function AdminLoginPage() {
 
   const validateForm = (): boolean => {
     let valid = true;
-    if (!username.trim()) {
-      setUsernameError('Username or email is required');
+    if (!name.trim()) {
+      setNameError('Name is required');
       valid = false;
     } else {
-      setUsernameError('');
+      setNameError('');
+    }
+
+    if (!email.trim()) {
+      setEmailError('Email is required');
+      valid = false;
+    } else {
+      setEmailError('');
     }
 
     if (!password) {
       setPasswordError('Password is required');
+      valid = false;
+    } else if (password.length < 8) {
+      setPasswordError('Password must be at least 8 characters');
       valid = false;
     } else {
       setPasswordError('');
@@ -40,7 +52,7 @@ export default function AdminLoginPage() {
     return valid;
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setApiError(null);
 
@@ -49,8 +61,11 @@ export default function AdminLoginPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await api.login(username.trim(), password);
+      await api.register(name.trim(), email.trim(), password);
 
+      // Auto-login after registration
+      const response = await api.login(email.trim(), password);
+      
       if (typeof window !== 'undefined') {
         localStorage.setItem('kaluna_jwt_token', response.token);
         localStorage.setItem('kaluna_admin_user', response.username);
@@ -66,9 +81,9 @@ export default function AdminLoginPage() {
         });
       } else {
         setApiError({
-          message: err?.message || 'Authentication failed. Please verify credentials.',
-          errorCode: 'UNAUTHORIZED',
-          statusCode: 401,
+          message: err?.message || 'Registration failed.',
+          errorCode: 'INTERNAL_ERROR',
+          statusCode: 500,
         });
       }
     } finally {
@@ -96,10 +111,10 @@ export default function AdminLoginPage() {
           </div>
 
           <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight pt-2">
-            Admin Console Login
+            Create an Account
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Sign in with your admin or creator credentials.
+            Sign up to start creating and managing events.
           </p>
         </div>
 
@@ -108,26 +123,35 @@ export default function AdminLoginPage() {
           <div className="p-4 rounded-xl bg-rose-950/80 border border-rose-800 text-rose-200 text-xs space-y-1">
             <div className="flex items-center gap-2 font-bold text-rose-300">
               <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-              <span>Authentication Failed [{apiError.errorCode}]</span>
+              <span>Registration Failed [{apiError.errorCode}]</span>
             </div>
             <p className="text-rose-300/90 leading-relaxed">
-              {apiError.errorCode === 'UNAUTHORIZED'
-                ? 'Invalid username or password. Access denied.'
-                : apiError.message}
+              {apiError.message}
             </p>
           </div>
         )}
 
         {/* Form */}
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleRegister} className="space-y-4">
           <Input
-            label="Username or Email"
+            label="Full Name"
             type="text"
-            placeholder="admin@kaluna.io"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            error={usernameError}
+            placeholder="Jane Doe"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            error={nameError}
             icon={<User className="w-4 h-4" />}
+            disabled={isSubmitting}
+          />
+
+          <Input
+            label="Email Address"
+            type="email"
+            placeholder="jane@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            error={emailError}
+            icon={<Mail className="w-4 h-4" />}
             disabled={isSubmitting}
           />
 
@@ -150,16 +174,16 @@ export default function AdminLoginPage() {
               isLoading={isSubmitting}
               className="w-full justify-center font-bold"
             >
-              Sign In to Dashboard
+              Sign Up
             </Button>
           </div>
         </form>
 
         <div className="text-center pt-4 border-t border-slate-200 dark:border-slate-800">
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Don't have an account?{' '}
-            <a href="/admin/register" className="text-slate-900 dark:text-white font-bold hover:underline">
-              Register here
+            Already have an account?{' '}
+            <a href="/admin/login" className="text-slate-900 dark:text-white font-bold hover:underline">
+              Sign in
             </a>
           </p>
         </div>

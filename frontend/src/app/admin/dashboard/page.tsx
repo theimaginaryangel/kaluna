@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { AdminStats, Event, Registration } from '@/lib/types';
-import { api, isCreatorMode, getCreatorEmail, clearCreatorIdentity } from '@/lib/api';
+import { api, isCreatorMode, getCreatorEmail } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge, CategoryBadge } from '@/components/ui/badge';
@@ -146,14 +146,9 @@ export default function AdminDashboardPage() {
   }, [loadDashboardData, router]);
 
   const handleLogout = () => {
-    if (isCreatorMode()) {
-      clearCreatorIdentity();
-      router.push('/admin');
-      return;
-    }
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('kaluna_jwt_token');
-      localStorage.removeItem('kaluna_admin_user');
+      window.localStorage.removeItem('kaluna_jwt_token');
+      window.localStorage.removeItem('kaluna_admin_user');
     }
     router.push('/admin/login');
   };

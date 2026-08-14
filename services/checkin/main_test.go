@@ -347,19 +347,6 @@ func TestSafeTypeAssertions(t *testing.T) {
 	}
 }
 
-func TestCreatorEmailHeaderParsing(t *testing.T) {
-	req := events.APIGatewayV2HTTPRequest{
-		Headers: map[string]string{"x-creator-email": "  Creator@Example.com "},
-	}
-	if got := creatorEmail(req); got != "creator@example.com" {
-		t.Errorf("expected normalized creator email, got %q", got)
-	}
-
-	empty := events.APIGatewayV2HTTPRequest{Headers: map[string]string{"Content-Type": "application/json"}}
-	if got := creatorEmail(empty); got != "" {
-		t.Errorf("expected empty creator email, got %q", got)
-	}
-}
 
 func TestCreatorGetCheckinsOwnEvent(t *testing.T) {
 	oldClient := dbClient
@@ -392,8 +379,13 @@ func TestCreatorGetCheckinsOwnEvent(t *testing.T) {
 				Method: "GET",
 				Path:   "/api/v1/creator/events/evt1/check-ins",
 			},
+			Authorizer: &events.APIGatewayV2HTTPRequestContextAuthorizerDescription{
+				Lambda: map[string]interface{}{
+					"sub":            "creator@example.com",
+					"cognito:groups": "Creator",
+				},
+			},
 		},
-		Headers:        map[string]string{"X-Creator-Email": "creator@example.com"},
 		PathParameters: map[string]string{"eventId": "evt1"},
 	}
 

@@ -26,7 +26,7 @@ export default function Home() {
   const handleCreateEvent = () => {
     const hasToken =
       typeof window !== 'undefined' && Boolean(window.localStorage.getItem('kaluna_jwt_token'));
-    router.push(hasToken || isCreatorMode() ? '/admin/events/new' : '/admin/creator-login');
+    router.push(hasToken || isCreatorMode() ? '/admin/events/new' : '/admin/login');
   };
 
   const fetchEvents = React.useCallback(async (cat: EventCategory | 'All') => {
