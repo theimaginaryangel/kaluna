@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Sun, Moon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { useTheme } from 'next-themes';
-import { WordmarkLink } from '@/components/layout/wordmark-link';
+import * as React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X, Sun, Moon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
+import { WordmarkLink } from "@/components/layout/wordmark-link";
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
@@ -21,11 +21,11 @@ export function Navbar() {
   }, []);
 
   const navLinks = [
-    { href: '/', label: 'Explore' },
-    { href: '/events', label: 'Events' },
-    { href: '/checkin', label: 'Check-In' },
-    { href: '/admin/creator-login', label: 'Creator' },
-    { href: '/admin', label: 'Admin' },
+    { href: "/", label: "Explore" },
+    { href: "/events", label: "Events" },
+    { href: "/checkin", label: "Check-In" },
+    { href: "/admin/creator-login", label: "Creator" },
+    { href: "/admin", label: "Admin" },
   ];
 
   const appleSpringEase = [0.25, 0.1, 0.25, 1] as const;
@@ -39,16 +39,19 @@ export function Navbar() {
         {/* Desktop Navigation Links */}
         <nav className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => {
-            const isActive = pathname === link.href || (link.href !== '/' && pathname?.startsWith(link.href));
+            const isActive =
+              pathname === link.href ||
+              (link.href !== "/" && pathname?.startsWith(link.href));
             return (
               <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  'relative px-3.5 py-2 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300 transition-all duration-200 flex items-center gap-2',
-                  'hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:border-[#FF2D87]/40 border border-transparent',
-                  'ring-pink-focus uppercase tracking-wider text-xs',
-                  isActive && 'text-slate-900 dark:text-white font-extrabold bg-slate-100 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700'
+                  "relative px-3.5 py-2 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300 transition-all duration-200 flex items-center gap-2",
+                  "hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:border-[#FF2D87]/40 border border-transparent",
+                  "ring-pink-focus uppercase tracking-wider text-xs",
+                  isActive &&
+                    "text-slate-900 dark:text-white font-extrabold bg-slate-100 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700",
                 )}
               >
                 <span>{link.label}</span>
@@ -68,16 +71,24 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           {mounted && (
             <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ring-pink-focus"
               aria-label="Toggle Dark Mode"
             >
-              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              {theme === "dark" ? (
+                <Sun className="w-5 h-5" />
+              ) : (
+                <Moon className="w-5 h-5" />
+              )}
             </button>
           )}
-          
+
           <Link href="/events">
-            <Button variant="primary" size="sm" className="font-bold uppercase tracking-wider text-xs bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200">
+            <Button
+              variant="primary"
+              size="sm"
+              className="font-bold uppercase tracking-wider text-xs bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+            >
               Browse Catalog
             </Button>
           </Link>
@@ -87,10 +98,14 @@ export function Navbar() {
         <div className="md:hidden flex items-center gap-2">
           {mounted && (
             <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ring-pink-focus"
             >
-              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              {theme === "dark" ? (
+                <Sun className="w-5 h-5" />
+              ) : (
+                <Moon className="w-5 h-5" />
+              )}
             </button>
           )}
           <button
@@ -98,7 +113,11 @@ export function Navbar() {
             className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition-colors ring-pink-focus"
             aria-label="Toggle Navigation Menu"
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileMenuOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Menu className="w-6 h-6" />
+            )}
           </button>
         </div>
       </div>
@@ -108,23 +127,26 @@ export function Navbar() {
         {mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: appleSpringEase }}
             className="md:hidden overflow-hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1C1C1E]"
           >
             <div className="px-4 pt-3 pb-6 space-y-2">
               {navLinks.map((link) => {
-                const isActive = pathname === link.href || (link.href !== '/' && pathname?.startsWith(link.href));
+                const isActive =
+                  pathname === link.href ||
+                  (link.href !== "/" && pathname?.startsWith(link.href));
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={cn(
-                      'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-wider text-slate-600 dark:text-slate-200 transition-all',
-                      'hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-[#FF2D87]/40 border border-transparent',
-                      isActive && 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-extrabold border-slate-200 dark:border-slate-700'
+                      "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-wider text-slate-600 dark:text-slate-200 transition-all",
+                      "hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-[#FF2D87]/40 border border-transparent",
+                      isActive &&
+                        "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-extrabold border-slate-200 dark:border-slate-700",
                     )}
                   >
                     <span>{link.label}</span>
@@ -134,7 +156,11 @@ export function Navbar() {
 
               <div className="pt-4 border-t border-slate-200 dark:border-[#272B40]">
                 <Link href="/events" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="primary" size="lg" className="w-full justify-center font-bold uppercase tracking-wider bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200">
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="w-full justify-center font-bold uppercase tracking-wider bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                  >
                     Browse All Events
                   </Button>
                 </Link>

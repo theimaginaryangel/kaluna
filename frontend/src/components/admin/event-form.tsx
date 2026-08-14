@@ -1,35 +1,60 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { useRouter } from 'next/navigation';
-import { Event, EventCategory, ApiError } from '@/lib/types';
-import { api, KalunaApiError } from '@/lib/api';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { AlertCircle, Calendar, MapPin, User, Users, DollarSign, Image as ImageIcon, Tag, FileText } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { Event, EventCategory, ApiError } from "@/lib/types";
+import { api, KalunaApiError } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  AlertCircle,
+  Calendar,
+  MapPin,
+  User,
+  Users,
+  DollarSign,
+  Image as ImageIcon,
+  Tag,
+  FileText,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface EventFormProps {
   initialEvent?: Event;
   isEditMode?: boolean;
 }
 
-export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) {
+export function EventForm({
+  initialEvent,
+  isEditMode = false,
+}: EventFormProps) {
   const router = useRouter();
 
-  const [title, setTitle] = React.useState(initialEvent?.name || initialEvent?.title || '');
-  const [category, setCategory] = React.useState<EventCategory>('Tech');
-  const [date, setDate] = React.useState(initialEvent?.date || new Date().toISOString().split('T')[0]);
-  const [time, setTime] = React.useState('18:00 - 20:00 EST');
-  const [location, setLocation] = React.useState(initialEvent?.venue || initialEvent?.location || 'Kaluna Main Stage (Hall A)');
-  const [speakerName, setSpeakerName] = React.useState('');
-  const [speakerRole, setSpeakerRole] = React.useState('');
-  const [capacity, setCapacity] = React.useState<number>(initialEvent?.capacity || 100);
-  const [waitlistEnabled, setWaitlistEnabled] = React.useState<boolean>(initialEvent?.waitlistEnabled ?? false);
+  const [title, setTitle] = React.useState(
+    initialEvent?.name || initialEvent?.title || "",
+  );
+  const [category, setCategory] = React.useState<EventCategory>("Tech");
+  const [date, setDate] = React.useState(
+    initialEvent?.date || new Date().toISOString().split("T")[0],
+  );
+  const [time, setTime] = React.useState("18:00 - 20:00 EST");
+  const [location, setLocation] = React.useState(
+    initialEvent?.venue ||
+      initialEvent?.location ||
+      "Kaluna Main Stage (Hall A)",
+  );
+  const [speakerName, setSpeakerName] = React.useState("");
+  const [speakerRole, setSpeakerRole] = React.useState("");
+  const [capacity, setCapacity] = React.useState<number>(
+    initialEvent?.capacity || 100,
+  );
+  const [waitlistEnabled, setWaitlistEnabled] = React.useState<boolean>(
+    initialEvent?.waitlistEnabled ?? false,
+  );
   const [price, setPrice] = React.useState<number>(0);
-  const [imageUrl, setImageUrl] = React.useState(initialEvent?.imageUrl || '');
-  const [description, setDescription] = React.useState('');
-  const [tagsInput, setTagsInput] = React.useState('');
+  const [imageUrl, setImageUrl] = React.useState(initialEvent?.imageUrl || "");
+  const [description, setDescription] = React.useState("");
+  const [tagsInput, setTagsInput] = React.useState("");
 
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [apiError, setApiError] = React.useState<ApiError | null>(null);
@@ -38,12 +63,12 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
 
-    if (!title.trim()) errs.title = 'Event title is required';
-    if (!date.trim()) errs.date = 'Event date is required';
-    if (!location.trim()) errs.location = 'Venue location is required';
-    if (capacity < 1) errs.capacity = 'Capacity must be at least 1 spot';
+    if (!title.trim()) errs.title = "Event title is required";
+    if (!date.trim()) errs.date = "Event date is required";
+    if (!location.trim()) errs.location = "Venue location is required";
+    if (capacity < 1) errs.capacity = "Capacity must be at least 1 spot";
     if (imageUrl.trim() && !/^https:\/\/\S+$/.test(imageUrl.trim())) {
-      errs.imageUrl = 'Banner image must be a valid https URL';
+      errs.imageUrl = "Banner image must be a valid https URL";
     }
 
     setErrors(errs);
@@ -79,7 +104,7 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
         await api.createEvent(eventPayload);
       }
 
-      router.push('/admin/dashboard');
+      router.push("/admin/dashboard");
     } catch (err: any) {
       if (err instanceof KalunaApiError) {
         setApiError({
@@ -89,8 +114,8 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
         });
       } else {
         setApiError({
-          message: err?.message || 'Failed to save event parameters.',
-          errorCode: 'INTERNAL_ERROR',
+          message: err?.message || "Failed to save event parameters.",
+          errorCode: "INTERNAL_ERROR",
         });
       }
     } finally {
@@ -212,11 +237,15 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
         {/* Waitlist Toggle */}
         <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-4 py-3">
           <div className="space-y-0.5">
-            <label htmlFor="waitlist-toggle" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+            <label
+              htmlFor="waitlist-toggle"
+              className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300"
+            >
               Waitlist
             </label>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              When full, attendees can join a waitlist and get promoted as seats free up.
+              When full, attendees can join a waitlist and get promoted as seats
+              free up.
             </p>
           </div>
           <button
@@ -227,14 +256,16 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
             onClick={() => setWaitlistEnabled((v) => !v)}
             disabled={isSubmitting}
             className={cn(
-              'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 disabled:opacity-50',
-              waitlistEnabled ? 'bg-[#FF2D87]' : 'bg-slate-300 dark:bg-slate-700'
+              "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 disabled:opacity-50",
+              waitlistEnabled
+                ? "bg-[#FF2D87]"
+                : "bg-slate-300 dark:bg-slate-700",
             )}
           >
             <span
               className={cn(
-                'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200',
-                waitlistEnabled ? 'translate-x-6' : 'translate-x-1'
+                "inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200",
+                waitlistEnabled ? "translate-x-6" : "translate-x-1",
               )}
             />
           </button>
@@ -292,7 +323,9 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
             disabled={isSubmitting}
           />
           {errors.description && (
-            <p className="text-xs text-rose-500 dark:text-rose-400 font-medium">{errors.description}</p>
+            <p className="text-xs text-rose-500 dark:text-rose-400 font-medium">
+              {errors.description}
+            </p>
           )}
         </div>
       </div>
@@ -303,7 +336,7 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
           type="button"
           variant="ghost"
           size="md"
-          onClick={() => router.push('/admin/dashboard')}
+          onClick={() => router.push("/admin/dashboard")}
           disabled={isSubmitting}
         >
           Cancel
@@ -315,7 +348,7 @@ export function EventForm({ initialEvent, isEditMode = false }: EventFormProps) 
           isLoading={isSubmitting}
           className="font-bold"
         >
-          {isEditMode ? 'Update Event' : 'Create Event'}
+          {isEditMode ? "Update Event" : "Create Event"}
         </Button>
       </div>
     </form>

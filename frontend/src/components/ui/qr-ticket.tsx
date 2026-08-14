@@ -1,12 +1,20 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { QRCodeSVG } from 'qrcode.react';
-import { Ticket } from '@/lib/types';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, User, CheckCircle2, AlertCircle, Copy, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import * as React from "react";
+import { QRCodeSVG } from "qrcode.react";
+import { Ticket } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Calendar,
+  MapPin,
+  User,
+  CheckCircle2,
+  AlertCircle,
+  Copy,
+  Check,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface QRTicketProps {
   ticket: Ticket;
@@ -23,15 +31,15 @@ export function QRTicket({ ticket, className, size = 180 }: QRTicketProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const isUsed = ticket.status === 'used';
-  const isValid = ticket.status === 'valid';
+  const isUsed = ticket.status === "used";
+  const isValid = ticket.status === "valid";
 
   return (
     <div
       className={cn(
-        'relative bg-[#141622] border border-[#272B40] rounded-2xl overflow-hidden shadow-2xl p-6 flex flex-col items-center gap-5 max-w-md mx-auto',
-        'transition-all duration-300 hover:border-[#FF2D87]/80 hover:shadow-[0_0_30px_rgba(255,45,135,0.2)]',
-        className
+        "relative bg-[#141622] border border-[#272B40] rounded-2xl overflow-hidden shadow-2xl p-6 flex flex-col items-center gap-5 max-w-md mx-auto",
+        "transition-all duration-300 hover:border-[#FF2D87]/80 hover:shadow-[0_0_30px_rgba(255,45,135,0.2)]",
+        className,
       )}
     >
       {/* Top Header Badge */}
@@ -46,7 +54,7 @@ export function QRTicket({ ticket, className, size = 180 }: QRTicketProps) {
         </div>
 
         <Badge
-          variant={isValid ? 'available' : isUsed ? 'soldOut' : 'limited'}
+          variant={isValid ? "available" : isUsed ? "soldOut" : "limited"}
           className="uppercase tracking-wider"
         >
           {ticket.status}

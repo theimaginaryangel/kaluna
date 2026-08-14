@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { cn } from '@/lib/utils';
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
 const FALLBACK_IMAGES = [
-  'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=1200&q=80',
+  "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=1200&q=80",
 ];
 
 function stableIndex(seed: string, length: number): number {
@@ -21,7 +21,7 @@ function stableIndex(seed: string, length: number): number {
 }
 
 export function fallbackEventImage(seed: string): string {
-  return FALLBACK_IMAGES[stableIndex(seed || 'kaluna', FALLBACK_IMAGES.length)];
+  return FALLBACK_IMAGES[stableIndex(seed || "kaluna", FALLBACK_IMAGES.length)];
 }
 
 interface EventImageProps {
@@ -56,7 +56,7 @@ export function EventImage({ src, seed, alt, className }: EventImageProps) {
       alt={alt}
       loading="lazy"
       onError={() => setFailed(true)}
-      className={cn('absolute inset-0 h-full w-full object-cover', className)}
+      className={cn("absolute inset-0 h-full w-full object-cover", className)}
     />
   );
 }

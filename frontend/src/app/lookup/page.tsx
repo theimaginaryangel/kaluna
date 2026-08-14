@@ -1,22 +1,29 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { motion } from 'framer-motion';
-import { Ticket, ApiError } from '@/lib/types';
-import { api, KalunaApiError } from '@/lib/api';
-import { QRTicket } from '@/components/ui/qr-ticket';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { PinkShimmerSkeleton } from '@/components/ui/skeleton';
-import { Search, Ticket as TicketIcon, CheckCircle2, AlertCircle, RefreshCw, QrCode } from 'lucide-react';
+import * as React from "react";
+import { motion } from "framer-motion";
+import { Ticket, ApiError } from "@/lib/types";
+import { api, KalunaApiError } from "@/lib/api";
+import { QRTicket } from "@/components/ui/qr-ticket";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { PinkShimmerSkeleton } from "@/components/ui/skeleton";
+import {
+  Search,
+  Ticket as TicketIcon,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
+  QrCode,
+} from "lucide-react";
 
 export default function TicketLookupPage() {
-  const [query, setQuery] = React.useState('');
+  const [query, setQuery] = React.useState("");
   const [ticket, setTicket] = React.useState<Ticket | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [isCheckingIn, setIsCheckingIn] = React.useState(false);
-  const [checkInSuccessMsg, setCheckInSuccessMsg] = React.useState('');
+  const [checkInSuccessMsg, setCheckInSuccessMsg] = React.useState("");
   const [error, setError] = React.useState<ApiError | null>(null);
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -26,7 +33,7 @@ export default function TicketLookupPage() {
     setIsLoading(true);
     setError(null);
     setTicket(null);
-    setCheckInSuccessMsg('');
+    setCheckInSuccessMsg("");
 
     try {
       const result = await api.getTicket(query.trim());
@@ -41,7 +48,7 @@ export default function TicketLookupPage() {
       } else {
         setError({
           message: `No ticket pass found matching '${query.trim()}'. Please verify ticket code or registered email.`,
-          errorCode: 'INVALID_TICKET',
+          errorCode: "INVALID_TICKET",
           statusCode: 404,
         });
       }
@@ -54,20 +61,22 @@ export default function TicketLookupPage() {
     if (!ticket) return;
     setIsCheckingIn(true);
     setError(null);
-    setCheckInSuccessMsg('');
+    setCheckInSuccessMsg("");
 
     try {
       const checkInResult = await api.checkInTicket(ticket.ticketCode);
-      setCheckInSuccessMsg(`Attendee ${checkInResult.userName} successfully checked in!`);
+      setCheckInSuccessMsg(
+        `Attendee ${checkInResult.userName} successfully checked in!`,
+      );
       // Update local ticket state
       setTicket((prev) =>
         prev
           ? {
               ...prev,
-              status: 'used',
+              status: "used",
               checkedInAt: checkInResult.timestamp,
             }
-          : null
+          : null,
       );
     } catch (err: any) {
       setTicket(null);
@@ -79,8 +88,8 @@ export default function TicketLookupPage() {
         });
       } else {
         setError({
-          message: err?.message || 'Check-in processing failed.',
-          errorCode: 'INVALID_TICKET',
+          message: err?.message || "Check-in processing failed.",
+          errorCode: "INVALID_TICKET",
         });
       }
     } finally {
@@ -109,7 +118,10 @@ export default function TicketLookupPage() {
         </div>
 
         {/* Search Bar Form */}
-        <form onSubmit={handleSearch} className="p-4 rounded-2xl bg-[#141622] border border-[#272B40] space-y-4 shadow-xl">
+        <form
+          onSubmit={handleSearch}
+          className="p-4 rounded-2xl bg-[#141622] border border-[#272B40] space-y-4 shadow-xl"
+        >
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <Input
               type="text"
@@ -178,15 +190,22 @@ export default function TicketLookupPage() {
               <div className="flex items-center gap-3">
                 <TicketIcon className="w-5 h-5 text-slate-400" />
                 <div>
-                  <span className="text-xs text-slate-400 font-mono block uppercase">Check-In Status</span>
+                  <span className="text-xs text-slate-400 font-mono block uppercase">
+                    Check-In Status
+                  </span>
                   <span className="text-sm font-bold text-white">
-                    {ticket.status === 'used' ? 'Checked In' : 'Pending Check-In'}
+                    {ticket.status === "used"
+                      ? "Checked In"
+                      : "Pending Check-In"}
                   </span>
                 </div>
               </div>
 
-              <Badge variant={ticket.status === 'used' ? 'soldOut' : 'available'} className="text-xs uppercase tracking-wider">
-                {ticket.status === 'used' ? 'Checked In' : 'Valid Ticket'}
+              <Badge
+                variant={ticket.status === "used" ? "soldOut" : "available"}
+                className="text-xs uppercase tracking-wider"
+              >
+                {ticket.status === "used" ? "Checked In" : "Valid Ticket"}
               </Badge>
             </div>
 
@@ -194,7 +213,7 @@ export default function TicketLookupPage() {
             <QRTicket ticket={ticket} />
 
             {/* Perform Check-in Button */}
-            {ticket.status !== 'used' && (
+            {ticket.status !== "used" && (
               <div className="pt-2 text-center">
                 <Button
                   variant="white"

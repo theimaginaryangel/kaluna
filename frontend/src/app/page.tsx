@@ -1,35 +1,61 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import Link from 'next/link';
-import { Event, EventCategory, ApiError } from '@/lib/types';
-import { api, KalunaApiError, isCreatorMode } from '@/lib/api';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { StatusBadge } from '@/components/ui/badge';
-import { PinkShimmerSkeleton, EventCardSkeleton } from '@/components/ui/skeleton';
-import { Calendar, MapPin, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
-import { AvatarStack } from '@/components/ui/avatar-stack';
-import { EventImage } from '@/components/ui/event-image';
-import { cn } from '@/lib/utils';
+import * as React from "react";
+import Link from "next/link";
+import { Event, EventCategory, ApiError } from "@/lib/types";
+import { api, KalunaApiError, isCreatorMode } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { StatusBadge } from "@/components/ui/badge";
+import {
+  PinkShimmerSkeleton,
+  EventCardSkeleton,
+} from "@/components/ui/skeleton";
+import {
+  Calendar,
+  MapPin,
+  ArrowRight,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
+import { AvatarStack } from "@/components/ui/avatar-stack";
+import { EventImage } from "@/components/ui/event-image";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
   const router = useRouter();
-  const [selectedCategory, setSelectedCategory] = React.useState<EventCategory | 'All'>('All');
+  const [selectedCategory, setSelectedCategory] = React.useState<
+    EventCategory | "All"
+  >("All");
   const [events, setEvents] = React.useState<Event[]>([]);
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const [apiError, setApiError] = React.useState<ApiError | null>(null);
 
-  const categories: (EventCategory | 'All')[] = ['All', 'Tech', 'Books', 'Workshop'];
+  const categories: (EventCategory | "All")[] = [
+    "All",
+    "Tech",
+    "Books",
+    "Workshop",
+  ];
 
   const handleCreateEvent = () => {
     const hasToken =
-      typeof window !== 'undefined' && Boolean(window.localStorage.getItem('kaluna_jwt_token'));
-    router.push(hasToken || isCreatorMode() ? '/admin/events/new' : '/admin/login');
+      typeof window !== "undefined" &&
+      Boolean(window.localStorage.getItem("kaluna_jwt_token"));
+    router.push(
+      hasToken || isCreatorMode() ? "/admin/events/new" : "/admin/login",
+    );
   };
 
-  const fetchEvents = React.useCallback(async (cat: EventCategory | 'All') => {
+  const fetchEvents = React.useCallback(async (cat: EventCategory | "All") => {
     setIsLoading(true);
     setApiError(null);
     try {
@@ -44,8 +70,8 @@ export default function Home() {
         });
       } else {
         setApiError({
-          message: err?.message || 'Failed to connect to event catalog server.',
-          errorCode: 'INTERNAL_ERROR',
+          message: err?.message || "Failed to connect to event catalog server.",
+          errorCode: "INTERNAL_ERROR",
         });
       }
     } finally {
@@ -71,7 +97,8 @@ export default function Home() {
           </h1>
 
           <p className="text-slate-600 dark:text-slate-400 text-lg sm:text-2xl font-medium max-w-2xl mx-auto leading-relaxed">
-            Tech talks, book salons, and workshops for people who read past the headline.
+            Tech talks, book salons, and workshops for people who read past the
+            headline.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4 pt-8">
@@ -84,7 +111,11 @@ export default function Home() {
               Create Event
             </Button>
             <Link href="/lookup">
-              <Button variant="secondary" size="lg" className="font-bold uppercase tracking-widest">
+              <Button
+                variant="secondary"
+                size="lg"
+                className="font-bold uppercase tracking-widest"
+              >
                 Find My Ticket
               </Button>
             </Link>
@@ -110,10 +141,10 @@ export default function Home() {
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
                   className={cn(
-                    'px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider transition-all duration-200',
-                    active 
-                      ? 'bg-slate-900 text-white shadow-soft dark:bg-white dark:text-slate-900' 
-                      : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
+                    "px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-wider transition-all duration-200",
+                    active
+                      ? "bg-slate-900 text-white shadow-soft dark:bg-white dark:text-slate-900"
+                      : "bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white",
                   )}
                 >
                   {cat}
@@ -133,7 +164,7 @@ export default function Home() {
                   Catalog Load Error [{apiError.errorCode}]
                 </h4>
                 <p className="text-base text-rose-700 dark:text-rose-300/80 font-medium mt-1">
-                  {apiError.message || 'Failed to fetch events from API.'}
+                  {apiError.message || "Failed to fetch events from API."}
                 </p>
               </div>
             </div>
@@ -162,14 +193,17 @@ export default function Home() {
         {/* Empty State */}
         {!isLoading && !apiError && events.length === 0 && (
           <div className="py-32 text-center border-4 border-slate-200 dark:border-slate-800 space-y-6">
-            <h3 className="text-4xl font-bold text-slate-900 dark:text-white uppercase tracking-tighter">No Events Found</h3>
+            <h3 className="text-4xl font-bold text-slate-900 dark:text-white uppercase tracking-tighter">
+              No Events Found
+            </h3>
             <p className="text-lg text-slate-600 dark:text-slate-400 font-medium max-w-md mx-auto">
-              There are currently no events listed under the "{selectedCategory}" category.
+              There are currently no events listed under the "{selectedCategory}
+              " category.
             </p>
             <Button
               variant="outline"
               size="lg"
-              onClick={() => setSelectedCategory('All')}
+              onClick={() => setSelectedCategory("All")}
               className="font-bold uppercase tracking-wider border-2 border-slate-900 text-slate-900 dark:border-white dark:text-white rounded-none"
             >
               Show All
@@ -181,16 +215,25 @@ export default function Home() {
         {!isLoading && !apiError && events.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {events.map((event) => {
-              const registered = Math.max(0, event.capacity - event.seatsRemaining);
-              const fillPercent = Math.min(100, Math.round((registered / (event.capacity || 1)) * 100));
+              const registered = Math.max(
+                0,
+                event.capacity - event.seatsRemaining,
+              );
+              const fillPercent = Math.min(
+                100,
+                Math.round((registered / (event.capacity || 1)) * 100),
+              );
               return (
-                <Card key={event.id || event.eventId} className="flex flex-col h-full justify-between group rounded-3xl border border-slate-100 dark:border-slate-800/50 shadow-soft hover:shadow-lg dark:hover:border-slate-700 bg-white dark:bg-[#1C1C1E] transition-all duration-400 overflow-hidden">
+                <Card
+                  key={event.id || event.eventId}
+                  className="flex flex-col h-full justify-between group rounded-3xl border border-slate-100 dark:border-slate-800/50 shadow-soft hover:shadow-lg dark:hover:border-slate-700 bg-white dark:bg-[#1C1C1E] transition-all duration-400 overflow-hidden"
+                >
                   <div>
                     <div className="relative h-64 w-full overflow-hidden bg-slate-100 dark:bg-slate-900">
                       <EventImage
                         src={event.imageUrl}
                         seed={event.eventId || event.id || event.name}
-                        alt={event.name || event.title || 'Event'}
+                        alt={event.name || event.title || "Event"}
                         className="transition-transform duration-500 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
@@ -204,7 +247,9 @@ export default function Home() {
                         {event.name || event.title}
                       </CardTitle>
                       <CardDescription className="text-base font-medium text-slate-600 dark:text-slate-400 line-clamp-3 mt-4">
-                        {event.date ? `${event.date} • ${event.venue || event.location || 'Venue TBD'}` : 'Event details will be shared soon.'}
+                        {event.date
+                          ? `${event.date} • ${event.venue || event.location || "Venue TBD"}`
+                          : "Event details will be shared soon."}
                       </CardDescription>
                     </CardHeader>
 
@@ -215,7 +260,9 @@ export default function Home() {
                       </div>
                       <div className="flex items-center gap-3">
                         <MapPin className="w-4 h-4" />
-                        <span className="truncate">{event.venue || event.location || 'Venue TBD'}</span>
+                        <span className="truncate">
+                          {event.venue || event.location || "Venue TBD"}
+                        </span>
                       </div>
                     </CardContent>
                   </div>
@@ -229,24 +276,35 @@ export default function Home() {
                       <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                         <div
                           className={cn(
-                            'h-full rounded-full transition-all duration-500',
+                            "h-full rounded-full transition-all duration-500",
                             fillPercent >= 100
-                              ? 'bg-rose-500'
+                              ? "bg-rose-500"
                               : fillPercent >= 80
-                              ? 'bg-amber-500'
-                              : 'bg-[#FF2D87]'
+                                ? "bg-amber-500"
+                                : "bg-[#FF2D87]",
                           )}
                           style={{ width: `${fillPercent}%` }}
                         />
                       </div>
                     </div>
-                    <AvatarStack registeredCount={registered} className="w-full" />
+                    <AvatarStack
+                      registeredCount={registered}
+                      className="w-full"
+                    />
                     <div className="flex items-center justify-between w-full border-t-2 border-slate-100 dark:border-slate-800 pt-6">
                       <span className="text-lg font-bold font-mono text-slate-900 dark:text-white">
-                        {event.seatsRemaining > 0 ? `${event.seatsRemaining} spots left` : 'Sold out'}
+                        {event.seatsRemaining > 0
+                          ? `${event.seatsRemaining} spots left`
+                          : "Sold out"}
                       </span>
-                      <Link href={`/events/detail?id=${event.slug || event.id || event.eventId}`}>
-                        <Button variant="primary" size="md" className="font-bold uppercase tracking-widest text-xs transition-colors duration-300">
+                      <Link
+                        href={`/events/detail?id=${event.slug || event.id || event.eventId}`}
+                      >
+                        <Button
+                          variant="primary"
+                          size="md"
+                          className="font-bold uppercase tracking-widest text-xs transition-colors duration-300"
+                        >
                           <span>Get Pass</span>
                           <ArrowRight className="w-4 h-4 ml-2" />
                         </Button>

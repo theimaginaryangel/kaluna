@@ -1,22 +1,22 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { api, KalunaApiError } from '@/lib/api';
-import { ApiError } from '@/lib/types';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ShieldCheck, User, Lock, AlertCircle } from 'lucide-react';
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { api, KalunaApiError } from "@/lib/api";
+import { ApiError } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ShieldCheck, User, Lock, AlertCircle } from "lucide-react";
 
 export default function AdminLoginPage() {
   const router = useRouter();
 
-  const [username, setUsername] = React.useState('');
-  const [password, setPassword] = React.useState('');
+  const [username, setUsername] = React.useState("");
+  const [password, setPassword] = React.useState("");
 
-  const [usernameError, setUsernameError] = React.useState('');
-  const [passwordError, setPasswordError] = React.useState('');
+  const [usernameError, setUsernameError] = React.useState("");
+  const [passwordError, setPasswordError] = React.useState("");
 
   const [apiError, setApiError] = React.useState<ApiError | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -24,17 +24,17 @@ export default function AdminLoginPage() {
   const validateForm = (): boolean => {
     let valid = true;
     if (!username.trim()) {
-      setUsernameError('Username or email is required');
+      setUsernameError("Username or email is required");
       valid = false;
     } else {
-      setUsernameError('');
+      setUsernameError("");
     }
 
     if (!password) {
-      setPasswordError('Password is required');
+      setPasswordError("Password is required");
       valid = false;
     } else {
-      setPasswordError('');
+      setPasswordError("");
     }
 
     return valid;
@@ -51,12 +51,12 @@ export default function AdminLoginPage() {
     try {
       const response = await api.login(username.trim(), password);
 
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('kaluna_jwt_token', response.token);
-        localStorage.setItem('kaluna_admin_user', response.username);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("kaluna_jwt_token", response.token);
+        localStorage.setItem("kaluna_admin_user", response.username);
       }
 
-      router.push('/admin/dashboard');
+      router.push("/admin/dashboard");
     } catch (err: any) {
       if (err instanceof KalunaApiError) {
         setApiError({
@@ -66,8 +66,9 @@ export default function AdminLoginPage() {
         });
       } else {
         setApiError({
-          message: err?.message || 'Authentication failed. Please verify credentials.',
-          errorCode: 'UNAUTHORIZED',
+          message:
+            err?.message || "Authentication failed. Please verify credentials.",
+          errorCode: "UNAUTHORIZED",
           statusCode: 401,
         });
       }
@@ -111,8 +112,8 @@ export default function AdminLoginPage() {
               <span>Authentication Failed [{apiError.errorCode}]</span>
             </div>
             <p className="text-rose-300/90 leading-relaxed">
-              {apiError.errorCode === 'UNAUTHORIZED'
-                ? 'Invalid username or password. Access denied.'
+              {apiError.errorCode === "UNAUTHORIZED"
+                ? "Invalid username or password. Access denied."
                 : apiError.message}
             </p>
           </div>
@@ -157,13 +158,15 @@ export default function AdminLoginPage() {
 
         <div className="text-center pt-4 border-t border-slate-200 dark:border-slate-800">
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Don't have an account?{' '}
-            <a href="/admin/register" className="text-slate-900 dark:text-white font-bold hover:underline">
+            Don't have an account?{" "}
+            <a
+              href="/admin/register"
+              className="text-slate-900 dark:text-white font-bold hover:underline"
+            >
               Register here
             </a>
           </p>
         </div>
-
       </motion.div>
     </div>
   );

@@ -1,31 +1,35 @@
-import * as React from 'react';
-import { cn } from '@/lib/utils';
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
 export interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'text' | 'rectangular' | 'circular' | 'card';
+  variant?: "text" | "rectangular" | "circular" | "card";
 }
 
-export function Skeleton({ className, variant = 'rectangular', ...props }: SkeletonProps) {
+export function Skeleton({
+  className,
+  variant = "rectangular",
+  ...props
+}: SkeletonProps) {
   const variantStyles = {
-    text: 'h-4 w-full rounded',
-    rectangular: 'h-24 w-full rounded-lg',
-    circular: 'h-12 w-12 rounded-full',
-    card: 'h-64 w-full rounded-xl',
+    text: "h-4 w-full rounded",
+    rectangular: "h-24 w-full rounded-lg",
+    circular: "h-12 w-12 rounded-full",
+    card: "h-64 w-full rounded-xl",
   };
 
   return (
     <div
-      className={cn(
-        'skeleton-shimmer-pink',
-        variantStyles[variant],
-        className
-      )}
+      className={cn("skeleton-shimmer-pink", variantStyles[variant], className)}
       {...props}
     />
   );
 }
 
-export function PinkShimmerSkeleton({ className, variant = 'rectangular', ...props }: SkeletonProps) {
+export function PinkShimmerSkeleton({
+  className,
+  variant = "rectangular",
+  ...props
+}: SkeletonProps) {
   return <Skeleton className={className} variant={variant} {...props} />;
 }
 
@@ -50,4 +54,3 @@ export function EventCardSkeleton() {
     </div>
   );
 }
-

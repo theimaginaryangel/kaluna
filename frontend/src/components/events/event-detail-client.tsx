@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Event, ApiError } from '@/lib/types';
-import { api, KalunaApiError } from '@/lib/api';
-import { Button } from '@/components/ui/button';
-import { CategoryBadge, StatusBadge } from '@/components/ui/badge';
-import { Modal } from '@/components/ui/modal';
-import { PinkShimmerSkeleton } from '@/components/ui/skeleton';
-import { RegistrationForm } from '@/components/events/registration-form';
-import { EventImage } from '@/components/ui/event-image';
+import * as React from "react";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { Event, ApiError } from "@/lib/types";
+import { api, KalunaApiError } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { CategoryBadge, StatusBadge } from "@/components/ui/badge";
+import { Modal } from "@/components/ui/modal";
+import { PinkShimmerSkeleton } from "@/components/ui/skeleton";
+import { RegistrationForm } from "@/components/events/registration-form";
+import { EventImage } from "@/components/ui/event-image";
 import {
   Calendar,
   Clock,
@@ -22,14 +22,15 @@ import {
   AlertCircle,
   Share2,
   CheckCircle2,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function EventDetailClient({ id }: { id: string }) {
   const [event, setEvent] = React.useState<Event | null>(null);
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<ApiError | null>(null);
-  const [isRegisterModalOpen, setIsRegisterModalOpen] = React.useState<boolean>(false);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] =
+    React.useState<boolean>(false);
 
   React.useEffect(() => {
     async function loadEvent() {
@@ -37,7 +38,7 @@ export function EventDetailClient({ id }: { id: string }) {
       setError(null);
       try {
         let fetchedEvent: Event;
-        if (id.startsWith('evt-') || id.startsWith('demo-')) {
+        if (id.startsWith("evt-") || id.startsWith("demo-")) {
           fetchedEvent = await api.getEventById(id);
         } else {
           try {
@@ -56,8 +57,8 @@ export function EventDetailClient({ id }: { id: string }) {
           });
         } else {
           setError({
-            message: err?.message || 'Event not found or failed to load.',
-            errorCode: 'EVENT_NOT_FOUND',
+            message: err?.message || "Event not found or failed to load.",
+            errorCode: "EVENT_NOT_FOUND",
             statusCode: 404,
           });
         }
@@ -88,13 +89,20 @@ export function EventDetailClient({ id }: { id: string }) {
           <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950/80 border-4 border-rose-600 flex items-center justify-center mx-auto text-rose-600">
             <AlertCircle className="w-8 h-8" />
           </div>
-          <h2 className="text-4xl font-bold text-slate-900 dark:text-white uppercase tracking-tighter">Event Not Found</h2>
+          <h2 className="text-4xl font-bold text-slate-900 dark:text-white uppercase tracking-tighter">
+            Event Not Found
+          </h2>
           <p className="text-lg font-medium text-slate-600 dark:text-slate-400">
-            {error?.message || `We couldn't find an event with identifier "${id}".`}
+            {error?.message ||
+              `We couldn't find an event with identifier "${id}".`}
           </p>
           <div className="pt-4">
             <Link href="/">
-              <Button variant="outline" size="lg" className="border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-slate-900 rounded-none font-bold uppercase tracking-widest">
+              <Button
+                variant="outline"
+                size="lg"
+                className="border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-slate-900 rounded-none font-bold uppercase tracking-widest"
+              >
                 Return to Events
               </Button>
             </Link>
@@ -106,15 +114,17 @@ export function EventDetailClient({ id }: { id: string }) {
 
   const capacityPercentage = Math.min(
     100,
-    Math.round(((event.capacity - event.seatsRemaining) / (event.capacity || 1)) * 100)
+    Math.round(
+      ((event.capacity - event.seatsRemaining) / (event.capacity || 1)) * 100,
+    ),
   );
   const remainingSpots = Math.max(0, event.seatsRemaining);
-  const isSoldOut = event.status === 'Sold Out' || remainingSpots <= 0;
+  const isSoldOut = event.status === "Sold Out" || remainingSpots <= 0;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.98, filter: 'blur(4px)' }}
-      animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+      initial={{ opacity: 0, y: 10, scale: 0.98, filter: "blur(4px)" }}
+      animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
       transition={{ duration: 0.5, ease: appleSpringEase }}
       className="min-h-screen pb-32 bg-white dark:bg-[#1C1C1E] transition-colors duration-300"
     >
@@ -135,10 +145,10 @@ export function EventDetailClient({ id }: { id: string }) {
           <EventImage
             src={event.imageUrl}
             seed={event.eventId || event.id || event.name}
-            alt={event.name || event.title || 'Event'}
+            alt={event.name || event.title || "Event"}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-          
+
           {/* Badges overlay */}
           <div className="absolute top-6 left-6 flex items-center gap-3">
             <StatusBadge status={event.status} />
@@ -157,9 +167,12 @@ export function EventDetailClient({ id }: { id: string }) {
 
             {/* Event Description */}
             <div className="p-8 rounded-3xl border border-slate-100 dark:border-slate-800/50 shadow-soft bg-white dark:bg-[#1C1C1E] space-y-6">
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-white uppercase tracking-tight">About this Event</h3>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white uppercase tracking-tight">
+                About this Event
+              </h3>
               <p className="text-slate-700 dark:text-slate-300 text-base sm:text-lg font-medium leading-relaxed whitespace-pre-line">
-                This event is scheduled for {event.date} at {event.venue || event.location || 'the venue listed below'}.
+                This event is scheduled for {event.date} at{" "}
+                {event.venue || event.location || "the venue listed below"}.
               </p>
             </div>
           </div>
@@ -172,7 +185,7 @@ export function EventDetailClient({ id }: { id: string }) {
                   Event Status
                 </span>
                 <span className="text-4xl font-bold font-mono text-slate-900 dark:text-white">
-                  {isSoldOut ? 'Sold Out' : 'Open'}
+                  {isSoldOut ? "Sold Out" : "Open"}
                 </span>
               </div>
 
@@ -181,7 +194,9 @@ export function EventDetailClient({ id }: { id: string }) {
                 <div className="flex items-start gap-4">
                   <Calendar className="w-5 h-5 text-slate-900 dark:text-white shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wide">Date & Time</span>
+                    <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wide">
+                      Date & Time
+                    </span>
                     <p className="text-slate-600 dark:text-slate-400 mt-1">
                       {event.date}
                     </p>
@@ -191,8 +206,12 @@ export function EventDetailClient({ id }: { id: string }) {
                 <div className="flex items-start gap-4">
                   <MapPin className="w-5 h-5 text-slate-900 dark:text-white shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wide">Venue Location</span>
-                    <p className="text-slate-600 dark:text-slate-400 mt-1">{event.venue || event.location || 'Venue TBD'}</p>
+                    <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wide">
+                      Venue Location
+                    </span>
+                    <p className="text-slate-600 dark:text-slate-400 mt-1">
+                      {event.venue || event.location || "Venue TBD"}
+                    </p>
                   </div>
                 </div>
 
@@ -200,8 +219,12 @@ export function EventDetailClient({ id }: { id: string }) {
                   <div className="flex items-start gap-4">
                     <ExternalLink className="w-5 h-5 text-slate-900 dark:text-white shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wide">Venue Details</span>
-                      <p className="text-slate-600 dark:text-slate-400 mt-1">Venue details will be shared closer to the event date.</p>
+                      <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wide">
+                        Venue Details
+                      </span>
+                      <p className="text-slate-600 dark:text-slate-400 mt-1">
+                        Venue details will be shared closer to the event date.
+                      </p>
                     </div>
                   </div>
                 )}
@@ -215,7 +238,8 @@ export function EventDetailClient({ id }: { id: string }) {
                     <span>Capacity</span>
                   </span>
                   <span className="font-mono text-slate-900 dark:text-white">
-                    {Math.max(0, event.capacity - event.seatsRemaining)} / {event.capacity}
+                    {Math.max(0, event.capacity - event.seatsRemaining)} /{" "}
+                    {event.capacity}
                   </span>
                 </div>
 
@@ -223,19 +247,21 @@ export function EventDetailClient({ id }: { id: string }) {
                 <div className="w-full h-3 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
                   <div
                     className={cn(
-                      'h-full transition-all duration-500',
+                      "h-full transition-all duration-500",
                       capacityPercentage >= 100
-                        ? 'bg-rose-500'
+                        ? "bg-rose-500"
                         : capacityPercentage >= 80
-                        ? 'bg-amber-500'
-                        : 'bg-emerald-500'
+                          ? "bg-amber-500"
+                          : "bg-emerald-500",
                     )}
                     style={{ width: `${capacityPercentage}%` }}
                   />
                 </div>
 
                 <p className="text-xs font-bold text-slate-500 text-right uppercase tracking-wider">
-                  {isSoldOut ? 'Event Full' : `${remainingSpots} spots available`}
+                  {isSoldOut
+                    ? "Event Full"
+                    : `${remainingSpots} spots available`}
                 </p>
               </div>
 
@@ -247,7 +273,7 @@ export function EventDetailClient({ id }: { id: string }) {
                 disabled={isSoldOut}
                 className="w-full justify-center font-bold text-lg uppercase tracking-widest rounded-full h-14"
               >
-                {isSoldOut ? 'Closed' : 'Register Now'}
+                {isSoldOut ? "Closed" : "Register Now"}
               </Button>
 
               <p className="text-center text-xs text-slate-500 dark:text-slate-400">

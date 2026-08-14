@@ -1,6 +1,7 @@
-export type EventCategory = 'Tech' | 'Books' | 'Workshop';
+export type EventCategory = "Tech" | "Books" | "Workshop";
 
-export type EventStatus = 'Available' | 'Limited' | 'Sold Out' | 'available' | 'limited' | 'sold_out';
+export type EventStatus =
+  "Available" | "Limited" | "Sold Out" | "available" | "limited" | "sold_out";
 
 export interface Event {
   id: string;
@@ -32,7 +33,13 @@ export interface Registration {
   email?: string;
   ticketCode?: string;
   registeredAt: string;
-  status: 'confirmed' | 'cancelled' | 'checked_in' | 'registered' | 'waitlisted' | 'available';
+  status:
+    | "confirmed"
+    | "cancelled"
+    | "checked_in"
+    | "registered"
+    | "waitlisted"
+    | "available";
 }
 
 export interface Ticket {
@@ -46,7 +53,7 @@ export interface Ticket {
   userName: string;
   userEmail: string;
   qrValue: string;
-  status: 'valid' | 'used' | 'invalid';
+  status: "valid" | "used" | "invalid";
   checkedInAt?: string;
 }
 
@@ -58,18 +65,18 @@ export interface CheckIn {
   userName: string;
   userEmail: string;
   timestamp: string;
-  status: 'success' | 'failed' | 'already_checked_in';
+  status: "success" | "failed" | "already_checked_in";
   note?: string;
 }
 
 export type ApiErrorCode =
-  | 'EVENT_NOT_FOUND'
-  | 'EVENT_FULL'
-  | 'DUPLICATE_REGISTRATION'
-  | 'INVALID_TICKET'
-  | 'UNAUTHORIZED'
-  | 'VALIDATION_ERROR'
-  | 'INTERNAL_ERROR';
+  | "EVENT_NOT_FOUND"
+  | "EVENT_FULL"
+  | "DUPLICATE_REGISTRATION"
+  | "INVALID_TICKET"
+  | "UNAUTHORIZED"
+  | "VALIDATION_ERROR"
+  | "INTERNAL_ERROR";
 
 export interface ApiError {
   message: string;

@@ -1,20 +1,26 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { Ticket } from '@/lib/types';
-import { api } from '@/lib/api';
-import { QRTicket } from '@/components/ui/qr-ticket';
-import { Button } from '@/components/ui/button';
-import { PinkShimmerSkeleton } from '@/components/ui/skeleton';
-import { CheckCircle2, Printer, ArrowLeft, Search, Hourglass } from 'lucide-react';
+import * as React from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Ticket } from "@/lib/types";
+import { api } from "@/lib/api";
+import { QRTicket } from "@/components/ui/qr-ticket";
+import { Button } from "@/components/ui/button";
+import { PinkShimmerSkeleton } from "@/components/ui/skeleton";
+import {
+  CheckCircle2,
+  Printer,
+  ArrowLeft,
+  Search,
+  Hourglass,
+} from "lucide-react";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
-  const ticketCode = searchParams?.get('code') || '';
-  const eventId = searchParams?.get('eventId') || '';
-  const isWaitlist = searchParams?.get('waitlist') === '1';
+  const ticketCode = searchParams?.get("code") || "";
+  const eventId = searchParams?.get("eventId") || "";
+  const isWaitlist = searchParams?.get("waitlist") === "1";
 
   const [ticket, setTicket] = React.useState<Ticket | null>(null);
   const [lookupFailed, setLookupFailed] = React.useState<boolean>(false);
@@ -45,7 +51,7 @@ function SuccessContent() {
   }, [ticketCode, eventId, isWaitlist]);
 
   const handlePrint = () => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       window.print();
     }
   };
@@ -76,8 +82,9 @@ function SuccessContent() {
             You&apos;re on the Waitlist
           </h1>
           <p className="text-sm text-slate-400 max-w-md mx-auto">
-            The event is currently at capacity. We&apos;ve added you to the waitlist and will email you the
-            moment a spot opens — no need to re-register.
+            The event is currently at capacity. We&apos;ve added you to the
+            waitlist and will email you the moment a spot opens — no need to
+            re-register.
           </p>
         </div>
 
@@ -94,10 +101,14 @@ function SuccessContent() {
   if (lookupFailed || !ticket) {
     return (
       <div className="max-w-xl mx-auto px-4 py-12 space-y-6 text-center">
-        <h1 className="text-2xl font-extrabold text-white tracking-tight">Ticket Not Found</h1>
+        <h1 className="text-2xl font-extrabold text-white tracking-tight">
+          Ticket Not Found
+        </h1>
         <p className="text-sm text-slate-400 max-w-md mx-auto">
-          We couldn't retrieve your ticket for code <code className="text-slate-200">{ticketCode || '(none)'}</code>.
-          If you just registered, your ticket is available from the Ticket Lookup page using your pass code.
+          We couldn't retrieve your ticket for code{" "}
+          <code className="text-slate-200">{ticketCode || "(none)"}</code>. If
+          you just registered, your ticket is available from the Ticket Lookup
+          page using your pass code.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
           <Link href="/lookup">
@@ -145,7 +156,12 @@ function SuccessContent() {
 
       {/* Printable / Download Actions */}
       <div className="flex flex-wrap items-center justify-center gap-3 pt-2 print:hidden">
-        <Button variant="white" size="md" onClick={handlePrint} className="gap-2 font-bold">
+        <Button
+          variant="white"
+          size="md"
+          onClick={handlePrint}
+          className="gap-2 font-bold"
+        >
           <Printer className="w-4 h-4 text-slate-950" />
           <span>Download / Print Pass</span>
         </Button>

@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import Link from 'next/link';
-import { Event } from '@/lib/types';
-import { api } from '@/lib/api';
-import { EventForm } from '@/components/admin/event-form';
-import { PinkShimmerSkeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, PencilLine, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import * as React from "react";
+import Link from "next/link";
+import { Event } from "@/lib/types";
+import { api } from "@/lib/api";
+import { EventForm } from "@/components/admin/event-form";
+import { PinkShimmerSkeleton } from "@/components/ui/skeleton";
+import { ArrowLeft, PencilLine, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function EditEventClient({ id }: { id: string }) {
   const [event, setEvent] = React.useState<Event | null>(null);

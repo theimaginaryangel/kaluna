@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { api, KalunaApiError } from '@/lib/api';
-import { ApiError } from '@/lib/types';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ShieldCheck, User, Lock, AlertCircle, Mail } from 'lucide-react';
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { api, KalunaApiError } from "@/lib/api";
+import { ApiError } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ShieldCheck, User, Lock, AlertCircle, Mail } from "lucide-react";
 
 export default function AdminRegisterPage() {
   const router = useRouter();
 
-  const [name, setName] = React.useState('');
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
+  const [name, setName] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
 
-  const [nameError, setNameError] = React.useState('');
-  const [emailError, setEmailError] = React.useState('');
-  const [passwordError, setPasswordError] = React.useState('');
+  const [nameError, setNameError] = React.useState("");
+  const [emailError, setEmailError] = React.useState("");
+  const [passwordError, setPasswordError] = React.useState("");
 
   const [apiError, setApiError] = React.useState<ApiError | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -26,27 +26,27 @@ export default function AdminRegisterPage() {
   const validateForm = (): boolean => {
     let valid = true;
     if (!name.trim()) {
-      setNameError('Name is required');
+      setNameError("Name is required");
       valid = false;
     } else {
-      setNameError('');
+      setNameError("");
     }
 
     if (!email.trim()) {
-      setEmailError('Email is required');
+      setEmailError("Email is required");
       valid = false;
     } else {
-      setEmailError('');
+      setEmailError("");
     }
 
     if (!password) {
-      setPasswordError('Password is required');
+      setPasswordError("Password is required");
       valid = false;
     } else if (password.length < 8) {
-      setPasswordError('Password must be at least 8 characters');
+      setPasswordError("Password must be at least 8 characters");
       valid = false;
     } else {
-      setPasswordError('');
+      setPasswordError("");
     }
 
     return valid;
@@ -65,13 +65,13 @@ export default function AdminRegisterPage() {
 
       // Auto-login after registration
       const response = await api.login(email.trim(), password);
-      
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('kaluna_jwt_token', response.token);
-        localStorage.setItem('kaluna_admin_user', response.username);
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("kaluna_jwt_token", response.token);
+        localStorage.setItem("kaluna_admin_user", response.username);
       }
 
-      router.push('/admin/dashboard');
+      router.push("/admin/dashboard");
     } catch (err: any) {
       if (err instanceof KalunaApiError) {
         setApiError({
@@ -81,8 +81,8 @@ export default function AdminRegisterPage() {
         });
       } else {
         setApiError({
-          message: err?.message || 'Registration failed.',
-          errorCode: 'INTERNAL_ERROR',
+          message: err?.message || "Registration failed.",
+          errorCode: "INTERNAL_ERROR",
           statusCode: 500,
         });
       }
@@ -181,13 +181,15 @@ export default function AdminRegisterPage() {
 
         <div className="text-center pt-4 border-t border-slate-200 dark:border-slate-800">
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Already have an account?{' '}
-            <a href="/admin/login" className="text-slate-900 dark:text-white font-bold hover:underline">
+            Already have an account?{" "}
+            <a
+              href="/admin/login"
+              className="text-slate-900 dark:text-white font-bold hover:underline"
+            >
               Sign in
             </a>
           </p>
         </div>
-
       </motion.div>
     </div>
   );

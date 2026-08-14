@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import Link from 'next/link';
-import { Github, Linkedin, Globe, Moon } from 'lucide-react';
-import { WordmarkLink } from '@/components/layout/wordmark-link';
+import * as React from "react";
+import Link from "next/link";
+import { Github, Linkedin, Globe, Moon } from "lucide-react";
+import { WordmarkLink } from "@/components/layout/wordmark-link";
 
 export function Footer() {
   return (
@@ -91,17 +91,26 @@ export function Footer() {
             </h4>
             <ul className="space-y-2 text-xs">
               <li>
-                <Link href="/events" className="hover:text-white transition-colors">
+                <Link
+                  href="/events"
+                  className="hover:text-white transition-colors"
+                >
                   All Events
                 </Link>
               </li>
               <li>
-                <Link href="/checkin" className="hover:text-white transition-colors">
+                <Link
+                  href="/checkin"
+                  className="hover:text-white transition-colors"
+                >
                   Ticket Scanner & Check-In
                 </Link>
               </li>
               <li>
-                <Link href="/admin" className="hover:text-white transition-colors">
+                <Link
+                  href="/admin"
+                  className="hover:text-white transition-colors"
+                >
                   Admin Analytics Dashboard
                 </Link>
               </li>
@@ -111,7 +120,9 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-[#272B40]/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-          <p>© {new Date().getFullYear()} Kaluna Platform. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} Kaluna Platform. All rights reserved.
+          </p>
           <p className="flex items-center gap-1">
             <span>Project by</span>
             <a

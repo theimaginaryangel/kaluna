@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import Link from 'next/link';
-import { EventForm } from '@/components/admin/event-form';
-import { ArrowLeft, CalendarPlus } from 'lucide-react';
+import * as React from "react";
+import Link from "next/link";
+import { EventForm } from "@/components/admin/event-form";
+import { ArrowLeft, CalendarPlus } from "lucide-react";
 
 export default function CreateEventPage() {
   return (
@@ -29,7 +29,8 @@ export default function CreateEventPage() {
               Create New Event
             </h1>
             <p className="text-xs text-slate-400">
-              Configure parameters, speaker credentials, and capacity limits for the new session.
+              Configure parameters, speaker credentials, and capacity limits for
+              the new session.
             </p>
           </div>
 

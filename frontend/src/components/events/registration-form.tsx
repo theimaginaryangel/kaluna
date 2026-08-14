@@ -1,12 +1,18 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { useRouter } from 'next/navigation';
-import { Event, ApiError } from '@/lib/types';
-import { api, KalunaApiError } from '@/lib/api';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { AlertCircle, CheckCircle2, Ticket as TicketIcon, User, Mail } from 'lucide-react';
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { Event, ApiError } from "@/lib/types";
+import { api, KalunaApiError } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Ticket as TicketIcon,
+  User,
+  Mail,
+} from "lucide-react";
 
 interface RegistrationFormProps {
   event: Event;
@@ -16,13 +22,13 @@ interface RegistrationFormProps {
 export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
   const router = useRouter();
 
-  const [userName, setUserName] = React.useState('');
-  const [userEmail, setUserEmail] = React.useState('');
+  const [userName, setUserName] = React.useState("");
+  const [userEmail, setUserEmail] = React.useState("");
   const [ticketsCount, setTicketsCount] = React.useState(1);
 
-  const [userNameError, setUserNameError] = React.useState('');
-  const [userEmailError, setUserEmailError] = React.useState('');
-  const [ticketsCountError, setTicketsCountError] = React.useState('');
+  const [userNameError, setUserNameError] = React.useState("");
+  const [userEmailError, setUserEmailError] = React.useState("");
+  const [ticketsCountError, setTicketsCountError] = React.useState("");
 
   const [apiError, setApiError] = React.useState<ApiError | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -33,28 +39,28 @@ export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
     let valid = true;
 
     if (!userName.trim() || userName.trim().length < 2) {
-      setUserNameError('Please enter your full name (minimum 2 characters)');
+      setUserNameError("Please enter your full name (minimum 2 characters)");
       valid = false;
     } else {
-      setUserNameError('');
+      setUserNameError("");
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!userEmail.trim()) {
-      setUserEmailError('Email address is required');
+      setUserEmailError("Email address is required");
       valid = false;
     } else if (!emailRegex.test(userEmail.trim())) {
-      setUserEmailError('Please enter a valid email address');
+      setUserEmailError("Please enter a valid email address");
       valid = false;
     } else {
-      setUserEmailError('');
+      setUserEmailError("");
     }
 
     if (ticketsCount !== 1) {
-      setTicketsCountError('Only 1 ticket per registration is allowed');
+      setTicketsCountError("Only 1 ticket per registration is allowed");
       valid = false;
     } else {
-      setTicketsCountError('');
+      setTicketsCountError("");
     }
 
     return valid;
@@ -72,17 +78,17 @@ export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
 
     try {
       const result = await api.registerForEvent({
-        eventId: event.id || event.eventId || '',
+        eventId: event.id || event.eventId || "",
         userName: userName.trim(),
         userEmail: userEmail.trim(),
       });
 
-      const passCode = result.ticketCode || result.ticketId || '';
+      const passCode = result.ticketCode || result.ticketId || "";
 
-      if (result.status === 'waitlisted') {
+      if (result.status === "waitlisted") {
         const queryParams = new URLSearchParams({
-          waitlist: '1',
-          eventId: event.id || event.eventId || '',
+          waitlist: "1",
+          eventId: event.id || event.eventId || "",
         });
         if (onSuccess) {
           onSuccess(passCode);
@@ -97,7 +103,7 @@ export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
 
       const queryParams = new URLSearchParams({
         code: passCode,
-        eventId: event.id || event.eventId || '',
+        eventId: event.id || event.eventId || "",
       });
 
       router.push(`/success/?${queryParams.toString()}`);
@@ -111,8 +117,9 @@ export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
         });
       } else {
         setApiError({
-          message: err?.message || 'An unexpected error occurred during registration.',
-          errorCode: 'INTERNAL_ERROR',
+          message:
+            err?.message || "An unexpected error occurred during registration.",
+          errorCode: "INTERNAL_ERROR",
         });
       }
     } finally {
@@ -122,22 +129,25 @@ export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
 
   const parseErrorCodeMessage = (code: string | undefined): string => {
     switch (code) {
-      case 'EVENT_FULL':
-        return 'This event has reached maximum capacity. No more registrations are accepted.';
-      case 'DUPLICATE_REGISTRATION':
+      case "EVENT_FULL":
+        return "This event has reached maximum capacity. No more registrations are accepted.";
+      case "DUPLICATE_REGISTRATION":
         return `You have already registered for "${event.name || event.title}" with email address ${userEmail}. Check your inbox or pass lookup.`;
-      case 'VALIDATION_ERROR':
-        return 'Invalid form data provided. Please check all fields and try again.';
-      case 'EVENT_NOT_FOUND':
-        return 'The requested event could not be located in our system.';
-      case 'UNAUTHORIZED':
-        return 'Session expired or unauthorized request.';
+      case "VALIDATION_ERROR":
+        return "Invalid form data provided. Please check all fields and try again.";
+      case "EVENT_NOT_FOUND":
+        return "The requested event could not be located in our system.";
+      case "UNAUTHORIZED":
+        return "Session expired or unauthorized request.";
       default:
-        return apiError?.message || 'Failed to complete registration. Please try again.';
+        return (
+          apiError?.message ||
+          "Failed to complete registration. Please try again."
+        );
     }
   };
 
-  const isSoldOut = event.status === 'Sold Out' || remainingSpots <= 0;
+  const isSoldOut = event.status === "Sold Out" || remainingSpots <= 0;
   const waitlistOpen = isSoldOut && Boolean(event.waitlistEnabled);
   const formLocked = isSoldOut && !waitlistOpen;
 
@@ -193,12 +203,17 @@ export function RegistrationForm({ event, onSuccess }: RegistrationFormProps) {
           isLoading={isSubmitting}
           disabled={formLocked}
         >
-          {isSoldOut ? (waitlistOpen ? 'Join Waitlist' : 'Event Sold Out') : 'Confirm Registration'}
+          {isSoldOut
+            ? waitlistOpen
+              ? "Join Waitlist"
+              : "Event Sold Out"
+            : "Confirm Registration"}
         </Button>
 
         {waitlistOpen && (
           <p className="mt-3 text-xs text-slate-400 text-center">
-            Event is full — joining the waitlist emails you the moment a spot opens.
+            Event is full — joining the waitlist emails you the moment a spot
+            opens.
           </p>
         )}
       </div>

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { AlertCircle, Home, ArrowLeft } from 'lucide-react';
+import * as React from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, Home, ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
   return (
@@ -34,13 +34,21 @@ export default function NotFound() {
         {/* Action Home Button */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
           <Link href="/" className="w-full sm:w-auto">
-            <Button variant="white" size="lg" className="w-full sm:w-auto justify-center font-bold gap-2">
+            <Button
+              variant="white"
+              size="lg"
+              className="w-full sm:w-auto justify-center font-bold gap-2"
+            >
               <Home className="w-4 h-4 text-slate-950" />
               <span>Return to Catalog</span>
             </Button>
           </Link>
           <Link href="/lookup" className="w-full sm:w-auto">
-            <Button variant="outline" size="lg" className="w-full sm:w-auto justify-center gap-2">
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full sm:w-auto justify-center gap-2"
+            >
               <ArrowLeft className="w-4 h-4 text-slate-400" />
               <span>Ticket Lookup</span>
             </Button>

@@ -1,25 +1,33 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { api, KalunaApiError } from '@/lib/api';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { PinkShimmerSkeleton } from '@/components/ui/skeleton';
-import { AlertCircle, ArrowLeft, CheckCircle2, XCircle, ShieldAlert } from 'lucide-react';
+import * as React from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
+import { api, KalunaApiError } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { PinkShimmerSkeleton } from "@/components/ui/skeleton";
+import {
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle2,
+  XCircle,
+  ShieldAlert,
+} from "lucide-react";
 
-type CancelState = 'idle' | 'confirming' | 'submitting' | 'cancelled' | 'error';
+type CancelState = "idle" | "confirming" | "submitting" | "cancelled" | "error";
 
 function CancelContent() {
   const searchParams = useSearchParams();
-  const initialCode = (searchParams?.get('code') || '').trim();
+  const initialCode = (searchParams?.get("code") || "").trim();
 
   const [ticketCode, setTicketCode] = React.useState(initialCode);
-  const [state, setState] = React.useState<CancelState>(initialCode ? 'confirming' : 'idle');
-  const [message, setMessage] = React.useState('');
-  const isSubmitting = state === 'submitting';
+  const [state, setState] = React.useState<CancelState>(
+    initialCode ? "confirming" : "idle",
+  );
+  const [message, setMessage] = React.useState("");
+  const isSubmitting = state === "submitting";
 
   const appleSpringEase = [0.25, 0.1, 0.25, 1] as const;
 
@@ -27,24 +35,24 @@ function CancelContent() {
     e.preventDefault();
     const code = ticketCode.trim();
     if (!code) {
-      setState('error');
-      setMessage('Please enter the pass code from your confirmation email.');
+      setState("error");
+      setMessage("Please enter the pass code from your confirmation email.");
       return;
     }
-    setState('submitting');
+    setState("submitting");
     try {
       const result = await api.cancelRegistration(code);
-      setMessage(result.message || 'Your registration has been cancelled.');
-      setState('cancelled');
+      setMessage(result.message || "Your registration has been cancelled.");
+      setState("cancelled");
     } catch (err) {
-      let msg = 'Failed to cancel your registration. Please try again.';
+      let msg = "Failed to cancel your registration. Please try again.";
       if (err instanceof KalunaApiError) {
         msg = err.message || msg;
       } else if (err instanceof Error && err.message) {
         msg = err.message;
       }
       setMessage(msg);
-      setState('error');
+      setState("error");
     }
   };
 
@@ -55,7 +63,7 @@ function CancelContent() {
       transition={{ duration: 0.4, ease: appleSpringEase }}
       className="max-w-xl mx-auto px-4 py-16 space-y-8 text-center"
     >
-      {state === 'idle' || state === 'confirming' ? (
+      {state === "idle" || state === "confirming" ? (
         <>
           <div className="space-y-3">
             <div className="w-14 h-14 rounded-full bg-rose-950/80 border border-rose-800 flex items-center justify-center mx-auto text-rose-400">
@@ -66,10 +74,13 @@ function CancelContent() {
               <span>Cancel Registration</span>
             </div>
             <h1 className="text-3xl font-extrabold text-white tracking-tight">
-              {state === 'confirming' ? 'Are you sure?' : 'Cancel a Registration'}
+              {state === "confirming"
+                ? "Are you sure?"
+                : "Cancel a Registration"}
             </h1>
             <p className="text-sm text-slate-400 max-w-md mx-auto">
-              Cancelling releases your seat so someone on the waitlist can attend. This cannot be undone.
+              Cancelling releases your seat so someone on the waitlist can
+              attend. This cannot be undone.
             </p>
           </div>
 
@@ -80,7 +91,7 @@ function CancelContent() {
               placeholder="e.g. 8a12a9ff-563b-4b47-bc1e-b11362879b35"
               value={ticketCode}
               onChange={(e) => setTicketCode(e.target.value)}
-              disabled={state === 'confirming' && Boolean(initialCode)}
+              disabled={state === "confirming" && Boolean(initialCode)}
               helperText="Found in your confirmation email."
               icon={<XCircle className="w-4 h-4" />}
             />
@@ -95,12 +106,14 @@ function CancelContent() {
             </Button>
           </form>
         </>
-      ) : state === 'cancelled' ? (
+      ) : state === "cancelled" ? (
         <>
           <div className="w-14 h-14 rounded-full bg-emerald-950/80 border border-emerald-800 flex items-center justify-center mx-auto text-emerald-400">
             <CheckCircle2 className="w-8 h-8" />
           </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Registration Cancelled</h1>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">
+            Registration Cancelled
+          </h1>
           <p className="text-sm text-slate-400 max-w-md mx-auto">{message}</p>
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <Link href="/">
@@ -121,9 +134,16 @@ function CancelContent() {
           <div className="w-14 h-14 rounded-full bg-rose-950/80 border border-rose-800 flex items-center justify-center mx-auto text-rose-400">
             <AlertCircle className="w-8 h-8" />
           </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Couldn&apos;t Cancel</h1>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">
+            Couldn&apos;t Cancel
+          </h1>
           <p className="text-sm text-slate-400 max-w-md mx-auto">{message}</p>
-          <Button variant="outline" size="md" onClick={() => setState('confirming')} className="gap-2">
+          <Button
+            variant="outline"
+            size="md"
+            onClick={() => setState("confirming")}
+            className="gap-2"
+          >
             <span>Try Again</span>
           </Button>
         </>

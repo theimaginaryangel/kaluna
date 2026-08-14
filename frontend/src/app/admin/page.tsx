@@ -1,19 +1,20 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { useRouter } from 'next/navigation';
-import { isCreatorMode, isAdminMode } from '@/lib/api';
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { isCreatorMode, isAdminMode } from "@/lib/api";
 
 export default function AdminPage() {
   const router = useRouter();
-  
+
   React.useEffect(() => {
     const hasToken =
-      typeof window !== 'undefined' && Boolean(window.localStorage.getItem('kaluna_jwt_token'));
+      typeof window !== "undefined" &&
+      Boolean(window.localStorage.getItem("kaluna_jwt_token"));
     if (hasToken && (isCreatorMode() || isAdminMode())) {
-      router.replace('/admin/dashboard');
+      router.replace("/admin/dashboard");
     } else {
-      router.replace('/admin/login');
+      router.replace("/admin/login");
     }
   }, [router]);
 
