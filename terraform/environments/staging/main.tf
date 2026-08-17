@@ -1,3 +1,9 @@
+variable "resend_api_key" {
+  type = string
+  sensitive = true
+  default = ""
+}
+
 locals {
   environment = "staging"
 }
@@ -9,25 +15,40 @@ module "dynamodb" {
 }
 
 module "api_gateway" {
-  source      = "../../modules/api_gateway"
-  api_name    = "kaluna-${local.environment}-api"
-  environment = local.environment
+  source          = "../../modules/api_gateway"
+  api_name        = "kaluna-${local.environment}-api"
+  environment     = local.environment
+  allowed_origins = ["http://localhost:3000", "https://kaluna.bennyduah.com"]
 }
 
-module "ses" {
-  source       = "../../modules/ses"
-  sender_email = "contact@bennyduah.com"
-  environment  = local.environment
+module "cognito" {
+  source         = "../../modules/cognito"
+  user_pool_name = "kaluna-${local.environment}-pool"
+  environment    = local.environment
 }
 
 
 
-resource "aws_apigatewayv2_authorizer" "jwt_auth" {
+
+
+resource "aws_apigatewayv2_authorizer" "cognito_jwt_auth" {
+  api_id           = module.api_gateway.api_id
+  authorizer_type  = "JWT"
+  identity_sources = ["$request.header.Authorization"]
+  name             = "cognito-jwt-authorizer"
+
+  jwt_configuration {
+    audience = [module.cognito.user_pool_client_id]
+    issuer   = "https://${module.cognito.user_pool_endpoint}"
+  }
+}
+
+resource "aws_apigatewayv2_authorizer" "custom_jwt_auth" {
   api_id           = module.api_gateway.api_id
   authorizer_type  = "REQUEST"
   authorizer_uri   = aws_lambda_function.authorizer.invoke_arn
   identity_sources = ["$request.header.Authorization"]
-  name             = "custom-jwt-authorizer"
+  name             = "custom-lambda-authorizer"
   authorizer_payload_format_version = "2.0"
   enable_simple_responses = true
 }
@@ -165,10 +186,11 @@ resource "aws_lambda_function" "events" {
 
 # Add API Gateway integration for Events
 resource "aws_apigatewayv2_integration" "events_integration" {
-  api_id             = module.api_gateway.api_id
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
-  integration_uri    = aws_lambda_function.events.invoke_arn
+  api_id                 = module.api_gateway.api_id
+  integration_type       = "AWS_PROXY"
+  integration_method     = "POST"
+  integration_uri        = aws_lambda_function.events.invoke_arn
+  payload_format_version = "2.0"
 }
 
 resource "aws_apigatewayv2_route" "events_get_all" {
@@ -182,7 +204,7 @@ resource "aws_apigatewayv2_route" "events_post" {
   route_key          = "POST /api/v1/events"
   target             = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
   authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
+  authorizer_id = aws_apigatewayv2_authorizer.cognito_jwt_auth.id
 }
 
 resource "aws_apigatewayv2_route" "events_get_one" {
@@ -196,7 +218,7 @@ resource "aws_apigatewayv2_route" "events_put" {
   route_key          = "PUT /api/v1/events/{eventId}"
   target             = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
   authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
+  authorizer_id = aws_apigatewayv2_authorizer.cognito_jwt_auth.id
 }
 
 resource "aws_apigatewayv2_route" "events_delete" {
@@ -204,7 +226,7 @@ resource "aws_apigatewayv2_route" "events_delete" {
   route_key          = "DELETE /api/v1/events/{eventId}"
   target             = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
   authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
+  authorizer_id = aws_apigatewayv2_authorizer.cognito_jwt_auth.id
 }
 
 resource "aws_apigatewayv2_route" "events_registrations_get" {
@@ -212,7 +234,7 @@ resource "aws_apigatewayv2_route" "events_registrations_get" {
   route_key          = "GET /api/v1/events/{eventId}/registrations"
   target             = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
   authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
+  authorizer_id = aws_apigatewayv2_authorizer.cognito_jwt_auth.id
 }
 
 # --- Secured Creator Routes (JWT Auth) ---
@@ -222,7 +244,7 @@ resource "aws_apigatewayv2_route" "creator_events_get" {
   route_key = "GET /api/v1/creator/events"
   target    = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
   authorization_type = "CUSTOM"
-  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
+  authorizer_id = aws_apigatewayv2_authorizer.custom_jwt_auth.id
 }
 
 resource "aws_apigatewayv2_route" "creator_events_post" {
@@ -230,7 +252,7 @@ resource "aws_apigatewayv2_route" "creator_events_post" {
   route_key = "POST /api/v1/creator/events"
   target    = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
   authorization_type = "CUSTOM"
-  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
+  authorizer_id = aws_apigatewayv2_authorizer.custom_jwt_auth.id
 }
 
 resource "aws_apigatewayv2_route" "creator_events_put" {
@@ -238,7 +260,7 @@ resource "aws_apigatewayv2_route" "creator_events_put" {
   route_key = "PUT /api/v1/creator/events/{eventId}"
   target    = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
   authorization_type = "CUSTOM"
-  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
+  authorizer_id = aws_apigatewayv2_authorizer.custom_jwt_auth.id
 }
 
 resource "aws_apigatewayv2_route" "creator_events_delete" {
@@ -246,7 +268,7 @@ resource "aws_apigatewayv2_route" "creator_events_delete" {
   route_key = "DELETE /api/v1/creator/events/{eventId}"
   target    = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
   authorization_type = "CUSTOM"
-  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
+  authorizer_id = aws_apigatewayv2_authorizer.custom_jwt_auth.id
 }
 
 resource "aws_apigatewayv2_route" "creator_events_registrations_get" {
@@ -254,7 +276,7 @@ resource "aws_apigatewayv2_route" "creator_events_registrations_get" {
   route_key = "GET /api/v1/creator/events/{eventId}/registrations"
   target    = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
   authorization_type = "CUSTOM"
-  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
+  authorizer_id = aws_apigatewayv2_authorizer.custom_jwt_auth.id
 }
 
 resource "aws_apigatewayv2_route" "creator_analytics_get" {
@@ -262,7 +284,7 @@ resource "aws_apigatewayv2_route" "creator_analytics_get" {
   route_key = "GET /api/v1/creator/analytics"
   target    = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
   authorization_type = "CUSTOM"
-  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
+  authorizer_id = aws_apigatewayv2_authorizer.custom_jwt_auth.id
 }
 
 resource "aws_apigatewayv2_route" "analytics_get" {
@@ -270,7 +292,7 @@ resource "aws_apigatewayv2_route" "analytics_get" {
   route_key          = "GET /api/v1/analytics"
   target             = "integrations/${aws_apigatewayv2_integration.events_integration.id}"
   authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
+  authorizer_id = aws_apigatewayv2_authorizer.cognito_jwt_auth.id
 }
 
 resource "aws_apigatewayv2_route" "health_get" {
@@ -295,8 +317,7 @@ module "registrations_iam" {
   role_name          = "kaluna-${local.environment}-registrations-role"
   environment        = local.environment
   dynamodb_table_arn = module.dynamodb.table_arn
-  enable_ses_send    = true
-}
+  }
 
 data "archive_file" "registrations_zip" {
   type        = "zip"
@@ -315,7 +336,7 @@ resource "aws_lambda_function" "registrations" {
   environment {
     variables = {
       TABLE_NAME   = module.dynamodb.table_name
-      SENDER_EMAIL = module.ses.sender_email
+      RESEND_API_KEY = var.resend_api_key
     }
   }
 
@@ -325,10 +346,11 @@ resource "aws_lambda_function" "registrations" {
 }
 
 resource "aws_apigatewayv2_integration" "registrations_integration" {
-  api_id             = module.api_gateway.api_id
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
-  integration_uri    = aws_lambda_function.registrations.invoke_arn
+  api_id                 = module.api_gateway.api_id
+  integration_type       = "AWS_PROXY"
+  integration_method     = "POST"
+  integration_uri        = aws_lambda_function.registrations.invoke_arn
+  payload_format_version = "2.0"
 }
 
 resource "aws_apigatewayv2_route" "registrations_post" {
@@ -409,10 +431,11 @@ resource "aws_lambda_function" "checkin" {
 }
 
 resource "aws_apigatewayv2_integration" "checkin_integration" {
-  api_id             = module.api_gateway.api_id
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
-  integration_uri    = aws_lambda_function.checkin.invoke_arn
+  api_id                 = module.api_gateway.api_id
+  integration_type       = "AWS_PROXY"
+  integration_method     = "POST"
+  integration_uri        = aws_lambda_function.checkin.invoke_arn
+  payload_format_version = "2.0"
 }
 
 resource "aws_apigatewayv2_route" "checkin_post" {
@@ -426,7 +449,7 @@ resource "aws_apigatewayv2_route" "checkins_get" {
   route_key          = "GET /api/v1/events/{eventId}/check-ins"
   target             = "integrations/${aws_apigatewayv2_integration.checkin_integration.id}"
   authorization_type = "JWT"
-  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
+  authorizer_id = aws_apigatewayv2_authorizer.cognito_jwt_auth.id
 }
 
 resource "aws_apigatewayv2_route" "creator_checkins_get" {
@@ -434,7 +457,7 @@ resource "aws_apigatewayv2_route" "creator_checkins_get" {
   route_key = "GET /api/v1/creator/events/{eventId}/check-ins"
   target    = "integrations/${aws_apigatewayv2_integration.checkin_integration.id}"
   authorization_type = "CUSTOM"
-  authorizer_id      = aws_apigatewayv2_authorizer.jwt_auth.id
+  authorizer_id = aws_apigatewayv2_authorizer.custom_jwt_auth.id
 }
 
 resource "aws_lambda_permission" "checkin_api_gw" {
@@ -452,8 +475,7 @@ module "reminders_iam" {
   role_name          = "kaluna-${local.environment}-reminders-role"
   environment        = local.environment
   dynamodb_table_arn = module.dynamodb.table_arn
-  enable_ses_send    = true
-}
+  }
 
 data "archive_file" "reminders_zip" {
   type        = "zip"
@@ -472,7 +494,7 @@ resource "aws_lambda_function" "reminders" {
   environment {
     variables = {
       TABLE_NAME   = module.dynamodb.table_name
-      SENDER_EMAIL = module.ses.sender_email
+      RESEND_API_KEY = var.resend_api_key
     }
   }
 
@@ -508,8 +530,7 @@ module "feedback_iam" {
   role_name          = "kaluna-${local.environment}-feedback-role"
   environment        = local.environment
   dynamodb_table_arn = module.dynamodb.table_arn
-  enable_ses_send    = true
-}
+  }
 
 data "archive_file" "feedback_zip" {
   type        = "zip"
@@ -528,7 +549,7 @@ resource "aws_lambda_function" "feedback" {
   environment {
     variables = {
       TABLE_NAME   = module.dynamodb.table_name
-      SENDER_EMAIL = module.ses.sender_email
+      RESEND_API_KEY = var.resend_api_key
     }
   }
 
@@ -572,5 +593,23 @@ module "monitoring" {
     (aws_lambda_function.checkin.function_name)       = "checkin"
     (aws_lambda_function.reminders.function_name)     = "reminders"
     (aws_lambda_function.feedback.function_name)      = "feedback"
+  }
+}
+
+# --- Budgets ---
+resource "aws_budgets_budget" "kaluna_budget" {
+  name              = "kaluna-${local.environment}-budget"
+  budget_type       = "COST"
+  limit_amount      = "1"
+  limit_unit        = "USD"
+  time_unit         = "MONTHLY"
+  time_period_start = "2024-01-01_00:00"
+
+  notification {
+    comparison_operator        = "GREATER_THAN"
+    threshold                  = 100
+    threshold_type             = "PERCENTAGE"
+    notification_type          = "ACTUAL"
+    subscriber_email_addresses = ["contact@bennyduah.com"]
   }
 }

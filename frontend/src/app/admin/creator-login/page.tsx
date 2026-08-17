@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ShieldCheck, User, Lock, AlertCircle } from "lucide-react";
 
-export default function AdminLoginPage() {
+export default function CreatorLoginPage() {
   const router = useRouter();
 
   const [username, setUsername] = React.useState("");
@@ -24,7 +24,7 @@ export default function AdminLoginPage() {
   const validateForm = (): boolean => {
     let valid = true;
     if (!username.trim()) {
-      setUsernameError("Username or email is required");
+      setUsernameError("Email is required");
       valid = false;
     } else {
       setUsernameError("");
@@ -49,7 +49,7 @@ export default function AdminLoginPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await api.login(username.trim(), password);
+      const response = await api.creatorLogin(username.trim(), password);
 
       if (typeof window !== "undefined") {
         localStorage.setItem("kaluna_jwt_token", response.token);
@@ -93,14 +93,14 @@ export default function AdminLoginPage() {
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center mx-auto text-slate-900 dark:text-white shadow-inner">
-            <ShieldCheck className="w-6 h-6 text-slate-500 dark:text-slate-400" />
+            <User className="w-6 h-6 text-slate-500 dark:text-slate-400" />
           </div>
 
           <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight pt-2">
-            Admin Console Login
+            Creator Console Login
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Sign in with your admin credentials.
+            Sign in with your creator credentials.
           </p>
         </div>
 
@@ -158,12 +158,12 @@ export default function AdminLoginPage() {
 
         <div className="text-center pt-4 border-t border-slate-200 dark:border-slate-800">
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Are you a creator?{" "}
+            Don't have an account?{" "}
             <a
-              href="/admin/creator-login"
+              href="/admin/register"
               className="text-slate-900 dark:text-white font-bold hover:underline"
             >
-              Login here
+              Register here
             </a>
           </p>
         </div>

@@ -25,7 +25,6 @@ export function Navbar() {
     { href: "/events", label: "Events" },
     { href: "/checkin", label: "Check-In" },
     { href: "/admin/creator-login", label: "Creator" },
-    { href: "/admin", label: "Admin" },
   ];
 
   const appleSpringEase = [0.25, 0.1, 0.25, 1] as const;

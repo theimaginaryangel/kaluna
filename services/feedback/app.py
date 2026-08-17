@@ -1,13 +1,44 @@
 import json
+import urllib.request
+import base64
 import os
 import boto3
 from datetime import datetime, timedelta
 from boto3.dynamodb.conditions import Key, Attr
 
 dynamodb = boto3.resource('dynamodb')
-ses = boto3.client('ses', region_name=os.environ.get('AWS_DEFAULT_REGION', 'us-east-1'))
+
 table_name = os.environ.get('TABLE_NAME', 'kaluna-dev-table')
 sender_email = os.environ.get('SENDER_EMAIL', 'contact@bennyduah.com')
+
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+
+def send_resend_email(to_email, subject, html_body, attachments=None):
+    if not RESEND_API_KEY:
+        print("No RESEND_API_KEY, skipping email.")
+        return
+        
+    url = "https://api.resend.com/emails"
+    headers = {
+        "Authorization": f"Bearer {RESEND_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "from": "demo.kaluna@bennyduah.com",
+        "to": [to_email],
+        "subject": subject,
+        "html": html_body
+    }
+    if attachments:
+        data["attachments"] = attachments
+        
+    req = urllib.request.Request(url, data=json.dumps(data).encode('utf-8'), headers=headers, method='POST')
+    try:
+        res = urllib.request.urlopen(req)
+        print(f"Sent email to {to_email}")
+    except Exception as e:
+        print(f"Failed to send email to {to_email}: {str(e)}")
+        
 table = dynamodb.Table(table_name)
 
 def lambda_handler(event, context):
@@ -49,18 +80,7 @@ def lambda_handler(event, context):
                 </html>
                 """
                 
-                try:
-                    ses.send_email(
-                        Source=sender_email,
-                        Destination={'ToAddresses': [email]},
-                        Message={
-                            'Subject': {'Data': f'Thank you for attending {event_name}'},
-                            'Body': {'Html': {'Data': html_body}}
-                        }
-                    )
-                    emails_sent += 1
-                except Exception as e:
-                    print(f"Failed to send feedback email to {email}: {e}")
+                send_resend_email(email, f"How was {event_name}?", html_body)
                     
         return {
             'statusCode': 200,

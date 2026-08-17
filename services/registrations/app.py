@@ -1,4 +1,6 @@
 import json
+import urllib.request
+import base64
 import os
 import uuid
 import time
@@ -15,9 +17,38 @@ from email.mime.application import MIMEApplication
 EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 
 dynamodb = boto3.resource('dynamodb')
-ses = boto3.client('ses', region_name=os.environ.get('AWS_DEFAULT_REGION', 'us-east-1'))
+
 table_name = os.environ.get('TABLE_NAME', 'kaluna-dev-table')
 sender_email = os.environ.get('SENDER_EMAIL', 'contact@bennyduah.com')
+
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+
+def send_resend_email(to_email, subject, html_body, attachments=None):
+    if not RESEND_API_KEY:
+        print("No RESEND_API_KEY, skipping email.")
+        return
+        
+    url = "https://api.resend.com/emails"
+    headers = {
+        "Authorization": f"Bearer {RESEND_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "from": "demo.kaluna@bennyduah.com",
+        "to": [to_email],
+        "subject": subject,
+        "html": html_body
+    }
+    if attachments:
+        data["attachments"] = attachments
+        
+    req = urllib.request.Request(url, data=json.dumps(data).encode('utf-8'), headers=headers, method='POST')
+    try:
+        res = urllib.request.urlopen(req)
+        print(f"Sent email to {to_email}")
+    except Exception as e:
+        print(f"Failed to send email to {to_email}: {str(e)}")
+        
 table = dynamodb.Table(table_name)
 
 def generate_ics(event_item: dict, ticket_id: str) -> str:
@@ -94,21 +125,17 @@ def send_ticket_email(email_addr: str, name: str, ticket_id: str, event_item: di
         </html>
         """
         
-    msg_body = MIMEMultipart('alternative')
-    msg_body.attach(MIMEText(html_body, 'html'))
-    msg.attach(msg_body)
     
+    attachments = None
     if status in ['registered', 'promoted']:
         ics_data = generate_ics(event_item, ticket_id)
-        att = MIMEApplication(ics_data.encode('utf-8'), _subtype='calendar')
-        att.add_header('Content-Disposition', 'attachment', filename='event.ics')
-        msg.attach(att)
-        
-    ses.send_raw_email(
-        Source=sender_email,
-        Destinations=[email_addr],
-        RawMessage={'Data': msg.as_string()}
-    )
+        attachments = [{
+            "filename": "event.ics",
+            "content": base64.b64encode(ics_data.encode('utf-8')).decode('utf-8')
+        }]
+    
+    send_resend_email(email_addr, msg['Subject'], html_body, attachments)
+
 
 def lambda_handler(event: dict, context) -> dict:
     start_time = time.time()

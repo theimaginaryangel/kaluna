@@ -1,3 +1,4 @@
+import { CognitoUserPool, CognitoUser, AuthenticationDetails } from 'amazon-cognito-identity-js';
 import {
   Event,
   EventCategory,
@@ -247,6 +248,11 @@ export function isCreatorMode(): boolean {
     : groups === "Creator";
 }
 
+
+function creatorScopedEventsPath(suffix: string): string {
+  return isCreatorMode() ? `/api/v1/creator/events${suffix}` : `/api/v1/events${suffix}`;
+}
+
 export function isAdminMode(): boolean {
   const payload = getJwtPayload();
   const groups = payload?.["cognito:groups"] || [];
@@ -270,6 +276,12 @@ async function request<T>(
   const authHeader = getAuthHeader();
   if (!headers.has("Authorization") && authHeader.Authorization) {
     headers.set("Authorization", authHeader.Authorization);
+  }
+
+  
+  const creatorEmail = getCreatorEmail();
+  if (creatorEmail && endpoint.includes('/api/v1/creator/')) {
+    headers.set('X-Creator-Email', creatorEmail);
   }
 
   const response = await fetch(new URL(endpoint, baseUrl).toString(), {
@@ -399,7 +411,7 @@ export const api = {
    */
   async getEventById(id: string): Promise<Event> {
     try {
-      const payload = await request<unknown>(`/api/v1/events/${id}`);
+      const payload = await request<unknown>(creatorScopedEventsPath(`/${id}`));
       return normalizeEvent(payload as Record<string, unknown>);
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
@@ -597,6 +609,51 @@ export const api = {
   },
 
   /**
+   * Creator Login (Custom Auth)
+   */
+  async creatorLogin(
+    username: string,
+    password: string,
+  ): Promise<{ token: string; username: string }> {
+    if (!username || !password) {
+      throw new KalunaApiError(
+        "Email and password are required",
+        "VALIDATION_ERROR",
+        400,
+      );
+    }
+
+    try {
+      const response = await fetch(`${getApiUrl()}/api/v1/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: username, password }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new KalunaApiError(
+          data.message || "Authentication failed",
+          "UNAUTHORIZED",
+          response.status,
+        );
+      }
+
+      return {
+        token: data.token,
+        username: data.user.email,
+      };
+    } catch (err) {
+      if (err instanceof KalunaApiError) throw err;
+      throw new KalunaApiError(
+        (err as Error)?.message || "Authentication failed",
+        "INTERNAL_ERROR",
+        500,
+      );
+    }
+  },
+
+  /**
    * Admin Register (Custom Auth)
    */
   async register(
@@ -668,7 +725,7 @@ export const api = {
     const payload = buildEventApiPayload(eventData);
 
     try {
-      const updated = await request<unknown>(`/api/v1/events/${id}`, {
+      const updated = await request<unknown>(creatorScopedEventsPath(`/${id}`), {
         method: "PUT",
         body: JSON.stringify(payload),
       });
@@ -709,7 +766,7 @@ export const api = {
       checkedIn: number;
       total: number;
       attendees: unknown[];
-    }>(`/api/v1/events/${encodeURIComponent(eventId)}/check-ins`);
+    }>(creatorScopedEventsPath(`/${encodeURIComponent(eventId)}/check-ins`));
     return {
       checkedIn: payload.checkedIn,
       total: payload.total,
@@ -751,7 +808,7 @@ export const api = {
 
     try {
       const payload = await request<unknown>(
-        `/api/v1/events/${encodeURIComponent(eventId)}/registrations`,
+        creatorScopedEventsPath(`/${encodeURIComponent(eventId)}/registrations`),
       );
       const registrations = unwrapListResponse<unknown[]>(payload);
       return (Array.isArray(registrations) ? registrations : []).map((entry) =>

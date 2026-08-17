@@ -51,7 +51,7 @@ export default function Home() {
       typeof window !== "undefined" &&
       Boolean(window.localStorage.getItem("kaluna_jwt_token"));
     router.push(
-      hasToken || isCreatorMode() ? "/admin/events/new" : "/admin/login",
+      hasToken || isCreatorMode() ? "/admin/events/new" : "/admin/creator-login",
     );
   };
 

@@ -165,7 +165,7 @@ export default function AdminDashboardPage() {
       window.localStorage.removeItem("kaluna_jwt_token");
       window.localStorage.removeItem("kaluna_admin_user");
     }
-    router.push("/admin/login");
+    router.push("/admin/creator-login");
   };
 
   const handleDelete = async (eventId: string, eventName: string) => {
