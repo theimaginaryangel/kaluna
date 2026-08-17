@@ -97,10 +97,10 @@ export default function CreatorLoginPage() {
           </div>
 
           <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight pt-2">
-            Creator Console Login
+            Want to create an event?
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Sign in with your creator credentials.
+            Sign in to access your creator dashboard.
           </p>
         </div>
 
@@ -124,7 +124,7 @@ export default function CreatorLoginPage() {
           <Input
             label="Username or Email"
             type="text"
-            placeholder="admin@kaluna.io"
+            placeholder="creator@kaluna.io"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             error={usernameError}

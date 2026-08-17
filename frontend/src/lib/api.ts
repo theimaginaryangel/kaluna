@@ -362,7 +362,8 @@ export const api = {
       }
 
       const queryString = searchParams.toString();
-      const endpoint = `${"/api/v1/events"}${queryString ? `?${queryString}` : ""}`;
+      const basePath = isCreatorMode() ? "/api/v1/creator/events" : "/api/v1/events";
+      const endpoint = `${basePath}${queryString ? `?${queryString}` : ""}`;
       const payload = await request<unknown>(endpoint);
       const rawEvents = unwrapListResponse<unknown[]>(payload);
 
@@ -551,7 +552,8 @@ export const api = {
    */
   async getAdminStats(): Promise<AdminStats> {
     try {
-      const payload = await request<unknown>("/api/v1/analytics");
+      const endpoint = isCreatorMode() ? "/api/v1/creator/analytics" : "/api/v1/analytics";
+      const payload = await request<unknown>(endpoint);
       return normalizeAdminStats(payload as Record<string, unknown>);
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
