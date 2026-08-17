@@ -705,7 +705,7 @@ export const api = {
     const payload = buildEventApiPayload(eventData);
 
     try {
-      const created = await request<unknown>("/api/v1/events", {
+      const created = await request<unknown>(creatorScopedEventsPath(""), {
         method: "POST",
         body: JSON.stringify(payload),
       });
@@ -747,7 +747,7 @@ export const api = {
    */
   async deleteEvent(id: string): Promise<void> {
     try {
-      await request<unknown>(`/api/v1/events/${id}`, { method: "DELETE" });
+      await request<unknown>(creatorScopedEventsPath(`/${id}`), { method: "DELETE" });
     } catch (err) {
       if (err instanceof KalunaApiError) throw err;
       throw new KalunaApiError(

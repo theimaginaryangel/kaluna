@@ -321,17 +321,17 @@ export default function AdminDashboardPage() {
               size="sm"
               onClick={() => handleExportCSV()}
               isLoading={isExporting}
-              className="gap-2 text-xs"
+              className="gap-2 text-xs w-full sm:w-auto"
             >
               <Download className="w-3.5 h-3.5 text-slate-300" />
               <span>Export CSV</span>
             </Button>
 
-            <Link href="/admin/events/new">
+            <Link href="/admin/events/new" className="w-full sm:w-auto">
               <Button
                 variant="white"
                 size="sm"
-                className="gap-2 font-bold text-xs"
+                className="gap-2 font-bold text-xs w-full sm:w-auto"
               >
                 <Plus className="w-4 h-4 text-slate-950" />
                 <span>Create Event</span>
@@ -342,7 +342,7 @@ export default function AdminDashboardPage() {
               variant="ghost"
               size="sm"
               onClick={handleLogout}
-              className="gap-2 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+              className="gap-2 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 w-full sm:w-auto"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Log Out</span>

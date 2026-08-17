@@ -331,22 +331,23 @@ export function EventForm({
       </div>
 
       {/* Submit Controls */}
-      <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-800">
+      <div className="pt-4 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-800">
         <Button
           type="button"
           variant="ghost"
           size="md"
           onClick={() => router.push("/admin/dashboard")}
           disabled={isSubmitting}
+          className="w-full sm:w-auto"
         >
           Cancel
         </Button>
         <Button
           type="submit"
           variant="white"
-          size="lg"
+          size="md"
           isLoading={isSubmitting}
-          className="font-bold"
+          className="font-bold w-full sm:w-auto"
         >
           {isEditMode ? "Update Event" : "Create Event"}
         </Button>
