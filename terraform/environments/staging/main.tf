@@ -613,3 +613,13 @@ resource "aws_budgets_budget" "kaluna_budget" {
     subscriber_email_addresses = ["contact@bennyduah.com"]
   }
 }
+
+resource "aws_apigatewayv2_authorizer" "jwt_auth" {
+  api_id           = module.api_gateway.api_id
+  authorizer_type  = "REQUEST"
+  authorizer_uri   = aws_lambda_function.authorizer.invoke_arn
+  identity_sources = ["$request.header.Authorization"]
+  name             = "custom-jwt-authorizer"
+  authorizer_payload_format_version = "2.0"
+  enable_simple_responses = true
+}

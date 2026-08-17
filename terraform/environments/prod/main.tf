@@ -629,3 +629,13 @@ module "frontend" {
   domain_name     = "kaluna.bennyduah.com"
   certificate_arn = data.aws_acm_certificate.frontend.arn
 }
+
+resource "aws_apigatewayv2_authorizer" "jwt_auth" {
+  api_id           = module.api_gateway.api_id
+  authorizer_type  = "REQUEST"
+  authorizer_uri   = aws_lambda_function.authorizer.invoke_arn
+  identity_sources = ["$request.header.Authorization"]
+  name             = "custom-jwt-authorizer"
+  authorizer_payload_format_version = "2.0"
+  enable_simple_responses = true
+}
