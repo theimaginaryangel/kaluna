@@ -95,13 +95,13 @@ jobs:
         run: terraform init
         working-directory: terraform/environments/${{ steps.env.outputs.environment }}
       
-            - name: Terraform Plan
+      - name: Terraform Plan
         env:
           TF_VAR_resend_api_key: ${{ secrets.RESEND_API_KEY }}
         run: terraform plan -no-color -out=tfplan
         working-directory: terraform/environments/${{ steps.env.outputs.environment }}
       
-            - name: Terraform Apply
+      - name: Terraform Apply
         env:
           TF_VAR_resend_api_key: ${{ secrets.RESEND_API_KEY }}
         run: terraform apply -auto-approve tfplan
