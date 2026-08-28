@@ -79,7 +79,7 @@ export default function AdminDashboardPage() {
     try {
       const [adminStats, eventsList] = await Promise.all([
         api.getAdminStats(),
-        api.getEvents(),
+        api.getEvents({ creatorScope: isCreatorMode() }),
       ]);
       setStats(adminStats);
       setEvents(eventsList);

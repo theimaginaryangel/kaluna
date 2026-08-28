@@ -211,6 +211,13 @@ function buildEventApiPayload(
   return payload;
 }
 
+function isTokenExpired(): boolean {
+  const payload = getJwtPayload();
+  if (!payload || !payload.exp) return true;
+  // exp is in seconds, Date.now() is in ms
+  return Date.now() >= payload.exp * 1000;
+}
+
 function getAuthHeader(): Record<string, string> {
   if (typeof window === "undefined") {
     return {};
@@ -218,6 +225,13 @@ function getAuthHeader(): Record<string, string> {
 
   const token = window.localStorage.getItem("kaluna_jwt_token");
   if (!token || token.trim() === "") {
+    return {};
+  }
+
+  // Clear expired tokens so they don't poison public requests
+  if (isTokenExpired()) {
+    window.localStorage.removeItem("kaluna_jwt_token");
+    window.localStorage.removeItem("kaluna_admin_user");
     return {};
   }
 
@@ -342,12 +356,15 @@ async function request<T>(
 
 export const api = {
   /**
-   * Fetch events list. In creator mode, returns only the creator's own events.
+   * Fetch events list.
+   * Pass creatorScope: true from the admin dashboard to fetch only the creator's own events.
+   * Public catalog pages should NOT pass creatorScope.
    */
   async getEvents(params?: {
     category?: EventCategory | "All";
     query?: string;
     featured?: boolean;
+    creatorScope?: boolean;
   }): Promise<Event[]> {
     try {
       const searchParams = new URLSearchParams();
@@ -362,7 +379,7 @@ export const api = {
       }
 
       const queryString = searchParams.toString();
-      const basePath = isCreatorMode() ? "/api/v1/creator/events" : "/api/v1/events";
+      const basePath = params?.creatorScope ? "/api/v1/creator/events" : "/api/v1/events";
       const endpoint = `${basePath}${queryString ? `?${queryString}` : ""}`;
       const payload = await request<unknown>(endpoint);
       const rawEvents = unwrapListResponse<unknown[]>(payload);

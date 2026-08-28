@@ -1,5 +1,6 @@
 import json
 import urllib.request
+import urllib.error
 import base64
 import os
 import boto3
@@ -36,7 +37,7 @@ def send_resend_email(to_email, subject, html_body, attachments=None):
     try:
         res = urllib.request.urlopen(req)
         print(f"Sent email to {to_email}")
-except urllib.error.HTTPError as e:
+    except urllib.error.HTTPError as e:
         error_msg = e.read().decode('utf-8')
         print(f"Resend HTTP Error: {error_msg}")
     except Exception as e:
